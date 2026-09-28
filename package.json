@@ -1,0 +1,17 @@
+{
+  "name": "chesschecker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Basic hot-seat Chess and Checkers, played on one screen. No computer opponent, no network play.",
+  "scripts": {
+    "serve:menu": "python3 -m http.server 8000",
+    "serve:chess": "python3 -m http.server 3012 --directory chess",
+    "serve:checkers": "python3 -m http.server 3013 --directory checkers",
+    "test": "node --test test/*.test.js",
+    "test:smoke": "playwright test test/smoke.spec.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1"
+  }
+}

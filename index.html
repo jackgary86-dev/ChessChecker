@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Chess & Checkers</title>
+<link rel="stylesheet" href="./shared.css">
+<style>
+  .menu-cards { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin-top: 20px; }
+  .card {
+    background: var(--panel); border: 1px solid #3a3d46; border-radius: 14px;
+    padding: 24px; width: 220px; text-align: center; text-decoration: none; color: var(--text);
+  }
+  .card:hover { border-color: var(--accent); }
+  .card .icon { font-size: 3rem; display: block; margin-bottom: 8px; }
+  .card .port { color: var(--muted); font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>Chess &amp; Checkers</h1>
+  <p class="hint">Two players, one screen. No computer opponent, no network play.</p>
+  <div class="menu-cards">
+    <a class="card" href="./chess/index.html">
+      <span class="icon">♟</span>
+      <div><b>Chess</b></div>
+      <div class="port">this machine's IP, port 3012</div>
+    </a>
+    <a class="card" href="./checkers/index.html">
+      <span class="icon">⛃</span>
+      <div><b>Checkers</b></div>
+      <div class="port">this machine's IP, port 3013</div>
+    </a>
+  </div>
+</div>
+</body>
+</html>

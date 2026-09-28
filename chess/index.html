@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Chess</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div class="app">
+  <h1>♟ Chess</h1>
+  <div class="topbar">
+    <button id="newGame" class="primary">New game</button>
+    <button id="undo">Undo</button>
+    <a href="../index.html"><button id="menu">Menu</button></a>
+  </div>
+  <div class="status-row">
+    <span class="turn-pill white" id="turnPill">White to move</span>
+    <span class="banner hidden" id="banner"></span>
+  </div>
+  <div class="board-wrap"><div class="board" id="board"></div></div>
+  <div class="trays">
+    <div class="tray">White captured: <span class="pieces" id="whiteCaptured"></span></div>
+    <div class="tray">Black captured: <span class="pieces" id="blackCaptured"></span></div>
+  </div>
+  <div class="promo-overlay hidden" id="promoOverlay">
+    <div class="promo-box" id="promoBox"></div>
+  </div>
+  <footer class="hint">Click a piece, then a highlighted square to move. Two players, one screen.</footer>
+</div>
+<script type="module" src="./chess.js"></script>
+</body>
+</html>
