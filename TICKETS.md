@@ -5,6 +5,10 @@ Chess serves on port 3012, Checkers on port 3013 (`http://<IP of machine>:3012`
 and `:3013`). This ticket list covers the *basic* build only; more features
 and game modes come later.
 
+All 20 tickets below (#1-#20 in the repo's GitHub issues) are done, shipped
+in commit `cf56219`. The **Next phase** section at the bottom (#21-#25)
+tracks what comes after the basic build.
+
 ## Chess
 1. **CHESS-01** — Board model: 8x8 state, standard starting position, FEN-free
    internal representation, `cloneState`/`squareName` helpers.
@@ -54,3 +58,21 @@ and game modes come later.
     no sideways scroll), `node --test` unit tests for both rules modules,
     and a Playwright smoke test that plays one move on each board at
     1280px and 390px.
+
+## Next phase (not part of the basic build)
+
+Filed as GitHub issues #21-#25. Not started — planning tickets only.
+
+21. **NAMES-01** — Name the two seats "Connor" and "Jack" instead of
+    White/Black, Red/Black, shown in the turn indicator, captured trays and
+    end-of-game banner. Keep color meaning visible too.
+22. **NAMES-02** — Make player names editable and persist them in
+    localStorage across reloads and across both games. Depends on NAMES-01.
+23. **HISTORY-01** — Record each finished game (date, game type, both
+    player names, result) to a persistent history in localStorage, as pure
+    testable logic. Depends on NAMES-01.
+24. **HISTORY-02** — History log UI: each player's win/loss/draw record per
+    game and combined, plus a recent-games list. Depends on HISTORY-01.
+25. **ART-01** *(backlog)* — Custom piece art for both games, replacing the
+    unicode glyphs and plain discs. Explicitly "later" — no design
+    direction chosen yet, do not start until asked.
