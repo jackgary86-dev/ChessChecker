@@ -11,6 +11,12 @@ CDNs (so it also works with no internet on the LAN).
 A menu page at the repo root (`index.html`) links to both, for local
 combined browsing; it isn't part of either per-port deployment.
 
+This game is also submitted to the Game Portal at `http://192.168.1.36:2016`
+(key `checkers-chess`), served from a mirrored `public/` build on the
+`claude/checkers-chess` branch of the separate `jackgary86-dev/Alert` repo.
+**When you land a feature here, also sync it there** — see `AGENTS.md` and
+`scripts/sync-to-alert.sh`.
+
 ## How to play
 
 **Chess** — click a piece to see its legal moves highlighted, click a
