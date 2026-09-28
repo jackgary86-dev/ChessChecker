@@ -61,18 +61,27 @@ tracks what comes after the basic build.
 
 ## Next phase (not part of the basic build)
 
-Filed as GitHub issues #21-#25. Not started — planning tickets only.
+Filed as GitHub issues #21-#25. All five are done.
 
 21. **NAMES-01** — Name the two seats "Connor" and "Jack" instead of
     White/Black, Red/Black, shown in the turn indicator, captured trays and
     end-of-game banner. Keep color meaning visible too.
 22. **NAMES-02** — Make player names editable and persist them in
     localStorage across reloads and across both games. Depends on NAMES-01.
+    `playerNames.js`: pure normalization + a localStorage wrapper; an
+    editable name field with a color swatch sits under each game's topbar.
 23. **HISTORY-01** — Record each finished game (date, game type, both
     player names, result) to a persistent history in localStorage, as pure
-    testable logic. Depends on NAMES-01.
+    testable logic. Depends on NAMES-01. `historyLogic.js` (pure:
+    `appendResult`/`summarize`/`recentGames`/`describeResult`, unit tested)
+    plus `historyStore.js` (the localStorage IO). Each game records its
+    result once, right when checkmate/stalemate/"no moves left" is reached.
 24. **HISTORY-02** — History log UI: each player's win/loss/draw record per
-    game and combined, plus a recent-games list. Depends on HISTORY-01.
-25. **ART-01** *(backlog)* — Custom piece art for both games, replacing the
-    unicode glyphs and plain discs. Explicitly "later" — no design
-    direction chosen yet, do not start until asked.
+    game and combined, plus a recent-games list. Depends on HISTORY-01. A
+    "History" page (`history.html`/`history.js`) reachable from each game's
+    topbar and the root menu.
+25. **ART-01** — Custom piece art for both games, replacing the unicode
+    glyphs and plain discs: hand-built inline SVG icons
+    (`chessPieceIcons.js`, `checkersPieceIcons.js`) using only simple
+    shapes (rects/polygons/circles), colored via CSS so White/Black and
+    Red/Black stay theme-driven. No external assets, fonts, or CDNs.

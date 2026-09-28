@@ -12,7 +12,15 @@
   <div class="topbar">
     <button id="newGame" class="primary">New game</button>
     <button id="undo">Undo</button>
+    <a href="./history.html"><button id="historyLink">History</button></a>
     <a href="../index.html"><button id="menu">Menu</button></a>
+  </div>
+  <div class="players-row">
+    <label class="player-edit"><span class="swatch white"></span>
+      <input id="p1NameInput" maxlength="20" aria-label="White player's name"></label>
+    <span class="vs">vs</span>
+    <label class="player-edit"><span class="swatch black"></span>
+      <input id="p2NameInput" maxlength="20" aria-label="Black player's name"></label>
   </div>
   <div class="status-row">
     <span class="turn-pill white" id="turnPill">White to move</span>

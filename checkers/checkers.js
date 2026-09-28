@@ -1,12 +1,10 @@
 import { initialState, legalMovesFor, applyMove } from './checkersRules.js';
+import { checkerIconSvg } from './checkersPieceIcons.js';
+import { loadPlayerNames, savePlayerNames } from './playerNames.js';
+import { loadHistory, saveHistory } from './historyStore.js';
+import { appendResult } from './historyLogic.js';
 
 const STORE_KEY = 'chesschecker-checkers-v1';
-
-// NAMES-01: fixed player names alongside the Red/Black colors. NAMES-02
-// will make these editable and persisted; keeping them as one constant here
-// is what that ticket will build on. Connor plays the side that moves
-// first, same as in Chess.
-export const PLAYER_NAMES = { r: 'Connor', b: 'Jack' };
 
 const boardEl = document.getElementById('board');
 const turnPill = document.getElementById('turnPill');
@@ -15,20 +13,26 @@ const redCapturedEl = document.getElementById('redCaptured');
 const blackCapturedEl = document.getElementById('blackCaptured');
 const redCapturedLabel = document.getElementById('redCapturedLabel');
 const blackCapturedLabel = document.getElementById('blackCapturedLabel');
+const p1NameInput = document.getElementById('p1NameInput');
+const p2NameInput = document.getElementById('p2NameInput');
 
-redCapturedLabel.textContent = PLAYER_NAMES.r;
-blackCapturedLabel.textContent = PLAYER_NAMES.b;
+// NAMES-01/02: names are editable and persisted (playerNames.js), shared
+// across both games. p1 always plays the side that moves first (Red here,
+// White in Chess); PLAYER_NAMES maps that onto this game's colors.
+let playerNames = loadPlayerNames();
+let PLAYER_NAMES = { r: playerNames.p1, b: playerNames.p2 };
 
 let state = initialState();
 let history = []; // snapshots taken at the start of each full turn (undo reverts a whole turn)
 let captures = { r: [], b: [] };
 let selected = null;
 let legalForSelected = [];
-let turnStartSnapshot = { state, captures: { r: [], b: [] } };
+let resultRecorded = false; // guards against logging the same finished game twice
+let turnStartSnapshot = { state, captures: { r: [], b: [] }, resultRecorded };
 
 function saveGame() {
   try {
-    localStorage.setItem(STORE_KEY, JSON.stringify({ state, captures }));
+    localStorage.setItem(STORE_KEY, JSON.stringify({ state, captures, resultRecorded }));
   } catch (e) { /* sandboxed storage: ignore */ }
 }
 
@@ -39,9 +43,46 @@ function loadGame() {
     const data = JSON.parse(raw);
     state = data.state;
     captures = data.captures || { r: [], b: [] };
+    resultRecorded = !!data.resultRecorded;
     return true;
   } catch (e) {
     return false;
+  }
+}
+
+function recordGameResult(finishedState) {
+  const entry = {
+    date: new Date().toISOString(),
+    game: 'checkers',
+    players: { p1: playerNames.p1, p2: playerNames.p2 },
+    result: finishedState.winner === 'r' ? 'p1' : 'p2',
+  };
+  saveHistory(appendResult(loadHistory(), entry));
+}
+
+function refreshNameDisplay() {
+  PLAYER_NAMES = { r: playerNames.p1, b: playerNames.p2 };
+  redCapturedLabel.textContent = PLAYER_NAMES.r;
+  blackCapturedLabel.textContent = PLAYER_NAMES.b;
+  if (p1NameInput.value !== playerNames.p1) p1NameInput.value = playerNames.p1;
+  if (p2NameInput.value !== playerNames.p2) p2NameInput.value = playerNames.p2;
+}
+
+function onNameChange() {
+  playerNames = { p1: p1NameInput.value, p2: p2NameInput.value };
+  savePlayerNames(playerNames);
+  playerNames = loadPlayerNames(); // pick up normalization (trims, falls back on empty)
+  refreshNameDisplay();
+  render();
+}
+
+function renderCapturedTray(el, pieces) {
+  el.innerHTML = '';
+  for (const p of pieces) {
+    const icon = document.createElement('span');
+    icon.className = 'mini-piece checker ' + (p.color === 'r' ? 'red' : 'black');
+    icon.innerHTML = checkerIconSvg(p.king);
+    el.appendChild(icon);
   }
 }
 
@@ -56,7 +97,8 @@ function render() {
       const piece = state.board[row][col];
       if (piece) {
         const disc = document.createElement('span');
-        disc.className = 'checker ' + (piece.color === 'r' ? 'red' : 'black') + (piece.king ? ' king' : '');
+        disc.className = 'checker ' + (piece.color === 'r' ? 'red' : 'black');
+        disc.innerHTML = checkerIconSvg(piece.king);
         sq.appendChild(disc);
       }
       if (selected && selected.row === row && selected.col === col) sq.classList.add('selected');
@@ -82,8 +124,8 @@ function render() {
     banner.className = 'banner over';
   }
 
-  redCapturedEl.textContent = captures.r.length ? String(captures.r.length) + ' piece(s)' : '';
-  blackCapturedEl.textContent = captures.b.length ? String(captures.b.length) + ' piece(s)' : '';
+  renderCapturedTray(redCapturedEl, captures.r);
+  renderCapturedTray(blackCapturedEl, captures.b);
 }
 
 function onSquareClick(row, col) {
@@ -116,7 +158,11 @@ function onSquareClick(row, col) {
 function performMove(move) {
   if (!state.forcedFrom) {
     // starting a fresh turn: remember where undo should return to
-    turnStartSnapshot = { state, captures: { r: [...captures.r], b: [...captures.b] } };
+    turnStartSnapshot = {
+      state,
+      captures: { r: [...captures.r], b: [...captures.b] },
+      resultRecorded,
+    };
   }
   const { state: next, captured, continued } = applyMove(state, move);
   if (captured) captures[captured.color].push(captured);
@@ -129,6 +175,10 @@ function performMove(move) {
     legalForSelected = [];
     history.push(turnStartSnapshot);
   }
+  if (state.status === 'over' && !resultRecorded) {
+    recordGameResult(state);
+    resultRecorded = true;
+  }
   saveGame();
   render();
 }
@@ -139,7 +189,8 @@ function newGame() {
   captures = { r: [], b: [] };
   selected = null;
   legalForSelected = [];
-  turnStartSnapshot = { state, captures: { r: [], b: [] } };
+  resultRecorded = false;
+  turnStartSnapshot = { state, captures: { r: [], b: [] }, resultRecorded };
   saveGame();
   render();
 }
@@ -149,6 +200,7 @@ function undo() {
   if (!last) return;
   state = last.state;
   captures = last.captures;
+  resultRecorded = last.resultRecorded;
   selected = null;
   legalForSelected = [];
   saveGame();
@@ -157,8 +209,11 @@ function undo() {
 
 document.getElementById('newGame').addEventListener('click', newGame);
 document.getElementById('undo').addEventListener('click', undo);
+p1NameInput.addEventListener('change', onNameChange);
+p2NameInput.addEventListener('change', onNameChange);
 
 if (!loadGame()) {
   state = initialState();
 }
+refreshNameDisplay();
 render();

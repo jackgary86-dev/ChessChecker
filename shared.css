@@ -132,10 +132,14 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 }
 
 .piece {
-  font-size: min(6.6vw, 38px);
-  line-height: 1;
+  width: 74%;
+  height: 74%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   pointer-events: none;
 }
+.piece svg { width: 100%; height: 100%; display: block; }
 
 .trays {
   display: flex;
@@ -176,29 +180,110 @@ footer.hint {
   max-width: 92vw;
 }
 
-/* Explicit piece coloring: unicode chess glyphs otherwise inherit one flat
-   text color and become hard to tell apart, so outline them. */
-.piece.white {
-  color: #fbf7ec;
-  text-shadow: -1px -1px 0 #14151a, 1px -1px 0 #14151a, -1px 1px 0 #14151a, 1px 1px 0 #14151a;
-}
-.piece.black {
-  color: #14151a;
-  text-shadow: -1px -1px 0 #fbf7ec, 1px -1px 0 #fbf7ec, -1px 1px 0 #fbf7ec, 1px 1px 0 #fbf7ec;
-}
+/* ART-01: custom SVG chess piece icons (chessPieceIcons.js), colored and
+   outlined via CSS so White/Black stay readable on either square shade. */
+.piece.white svg { fill: #fbf7ec; stroke: #14151a; stroke-width: 1.4; stroke-linejoin: round; }
+.piece.black svg { fill: #14151a; stroke: #fbf7ec; stroke-width: 1.4; stroke-linejoin: round; }
 
-/* Checkers pieces are drawn as plain colored discs, not font glyphs: the
-   unicode draughts characters (U+26C0-26C3) have poor/inconsistent font
-   coverage and can render identically for both colors. */
+/* ART-01: custom SVG checkers piece icons (checkersPieceIcons.js) — a rim,
+   a lighter face, a highlight, and a gold crown mark for kings. */
 .checker {
   width: 72%;
   height: 72%;
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.35), 0 2px 3px rgba(0, 0, 0, 0.45);
   pointer-events: none;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.45));
 }
-.checker.red { background: radial-gradient(circle at 35% 30%, #e2665a, #9c2c22); }
-.checker.black { background: radial-gradient(circle at 35% 30%, #5a5a5a, #17171a); }
-.checker.king {
-  box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.35), inset 0 0 0 6px #f4d35e, 0 2px 3px rgba(0, 0, 0, 0.45);
+.checker svg { width: 100%; height: 100%; display: block; }
+.checker.red .disc-outer { fill: #9c2c22; }
+.checker.red .disc-inner { fill: #e2665a; }
+.checker.black .disc-outer { fill: #17171a; }
+.checker.black .disc-inner { fill: #5a5a5a; }
+.checker .disc-shine { fill: rgba(255, 255, 255, 0.28); }
+.checker .disc-crown { fill: #f4d35e; stroke: #8a6d1a; stroke-width: 0.6; }
+
+.mini-piece {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  vertical-align: middle;
 }
+.mini-piece svg { width: 100%; height: 100%; display: block; }
+
+.players-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.player-edit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--panel);
+  border: 1px solid #3a3d46;
+  border-radius: 999px;
+  padding: 4px 10px 4px 6px;
+}
+.player-edit input {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 600;
+  width: 9ch;
+  min-width: 0;
+}
+.player-edit input:focus { outline: none; }
+.players-row .vs { color: var(--muted); font-size: 0.85rem; }
+.swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex: none;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+.swatch.white { background: #fbf7ec; }
+.swatch.black { background: #14151a; border: 1px solid #4a4d57; }
+.swatch.red { background: #c8483c; }
+
+.promo-piece {
+  width: 48px;
+  height: 48px;
+  padding: 6px;
+}
+.promo-piece svg { width: 100%; height: 100%; display: block; }
+.promo-piece.white svg { fill: #fbf7ec; stroke: #14151a; stroke-width: 1.4; stroke-linejoin: round; }
+.promo-piece.black svg { fill: #14151a; stroke: #fbf7ec; stroke-width: 1.4; stroke-linejoin: round; }
+
+.history-table {
+  border-collapse: collapse;
+  width: min(92vw, 620px);
+  font-size: 0.9rem;
+}
+.history-table th, .history-table td {
+  border: 1px solid #3a3d46;
+  padding: 6px 10px;
+  text-align: center;
+}
+.history-table th { background: var(--panel); }
+.history-table td:first-child, .history-table th:first-child { text-align: left; }
+
+.history-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: min(92vw, 620px);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.history-list li {
+  background: var(--panel);
+  border: 1px solid #3a3d46;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.88rem;
+}
+
+h2 { font-size: 1.05rem; margin: 10px 0 4px; }
