@@ -1,11 +1,23 @@
 import { initialState, legalMovesFor, applyMove } from './checkersRules.js';
 
 const STORE_KEY = 'chesschecker-checkers-v1';
+
+// NAMES-01: fixed player names alongside the Red/Black colors. NAMES-02
+// will make these editable and persisted; keeping them as one constant here
+// is what that ticket will build on. Connor plays the side that moves
+// first, same as in Chess.
+export const PLAYER_NAMES = { r: 'Connor', b: 'Jack' };
+
 const boardEl = document.getElementById('board');
 const turnPill = document.getElementById('turnPill');
 const banner = document.getElementById('banner');
 const redCapturedEl = document.getElementById('redCaptured');
 const blackCapturedEl = document.getElementById('blackCaptured');
+const redCapturedLabel = document.getElementById('redCapturedLabel');
+const blackCapturedLabel = document.getElementById('blackCapturedLabel');
+
+redCapturedLabel.textContent = PLAYER_NAMES.r;
+blackCapturedLabel.textContent = PLAYER_NAMES.b;
 
 let state = initialState();
 let history = []; // snapshots taken at the start of each full turn (undo reverts a whole turn)
@@ -59,13 +71,14 @@ function render() {
     }
   }
 
-  turnPill.textContent = (state.turn === 'r' ? 'Red' : 'Black') + ' to move' +
+  const turnColorName = state.turn === 'r' ? 'Red' : 'Black';
+  turnPill.textContent = `${PLAYER_NAMES[state.turn]} (${turnColorName}) to move` +
     (state.forcedFrom ? ' — must continue jumping' : '');
   turnPill.className = 'turn-pill ' + (state.turn === 'r' ? 'red' : 'black');
 
   banner.className = 'banner hidden';
   if (state.status === 'over') {
-    banner.textContent = (state.winner === 'r' ? 'Red' : 'Black') + ' wins';
+    banner.textContent = PLAYER_NAMES[state.winner] + ' wins';
     banner.className = 'banner over';
   }
 

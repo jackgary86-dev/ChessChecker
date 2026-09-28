@@ -8,13 +8,23 @@ const GLYPH = {
 };
 const STORE_KEY = 'chesschecker-chess-v1';
 
+// NAMES-01: fixed player names alongside the White/Black colors. NAMES-02
+// will make these editable and persisted; keeping them as one constant here
+// is what that ticket will build on.
+export const PLAYER_NAMES = { w: 'Connor', b: 'Jack' };
+
 const boardEl = document.getElementById('board');
 const turnPill = document.getElementById('turnPill');
 const banner = document.getElementById('banner');
 const whiteCapturedEl = document.getElementById('whiteCaptured');
 const blackCapturedEl = document.getElementById('blackCaptured');
+const whiteCapturedLabel = document.getElementById('whiteCapturedLabel');
+const blackCapturedLabel = document.getElementById('blackCapturedLabel');
 const promoOverlay = document.getElementById('promoOverlay');
 const promoBox = document.getElementById('promoBox');
+
+whiteCapturedLabel.textContent = PLAYER_NAMES.w;
+blackCapturedLabel.textContent = PLAYER_NAMES.b;
 
 let state = initialState();
 let history = []; // { state, captured, capturedBy } snapshots for undo
@@ -70,7 +80,8 @@ function render() {
     }
   }
 
-  turnPill.textContent = (state.turn === 'w' ? 'White' : 'Black') + ' to move';
+  const turnColorName = state.turn === 'w' ? 'White' : 'Black';
+  turnPill.textContent = `${PLAYER_NAMES[state.turn]} (${turnColorName}) to move`;
   turnPill.className = 'turn-pill ' + (state.turn === 'w' ? 'white' : 'black');
 
   banner.className = 'banner hidden';
@@ -78,7 +89,7 @@ function render() {
     banner.textContent = 'Check';
     banner.className = 'banner check';
   } else if (state.status === 'checkmate') {
-    banner.textContent = 'Checkmate: ' + (state.winner === 'w' ? 'White' : 'Black') + ' wins';
+    banner.textContent = 'Checkmate: ' + PLAYER_NAMES[state.winner] + ' wins';
     banner.className = 'banner over';
   } else if (state.status === 'stalemate') {
     banner.textContent = 'Draw (stalemate)';
