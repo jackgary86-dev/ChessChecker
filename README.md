@@ -100,6 +100,13 @@ designed) brought the split to roughly 47.6% Chess / 47.7% Checkers / 4.7%
 draw across 3,000 simulated battles. A regression test keeps both
 factions' win rate between 35% and 65% going forward.
 
+**Combat randomness.** Every hit's raw damage rolls within a ±15% band
+(before the hive shield reduces it further) off its own seeded rng stream,
+so the same battle seed always deals identical damage on replay — but two
+different seeds starting from the same formation and obstacle layout no
+longer play out move-for-move identically. The balance-regression test
+above still holds with this on by default.
+
 ## Run it locally
 
 Each game only needs a static file server pointed at its own folder:
@@ -151,11 +158,12 @@ checkers/
 autochess/
   index.html
   autochessRules.js         pure battle engine (no DOM) — starting
-                             formations, targeting (incl. Checkers'
-                             cornering), movement (incl. group cohesion and
-                             forward-only), the hive shield/counter,
-                             promotion, one simulation tick, a full-battle
-                             runner — deterministic for a given seed
+                             formations, a draft phase, targeting (incl.
+                             Checkers' cornering), movement (incl. group
+                             cohesion and forward-only), the hive
+                             shield/counter, promotion, seeded ±15% damage
+                             variance, one simulation tick, a full-battle
+                             runner — fully reproducible for a given seed
   chessCharacterIcons.js,
   checkersCharacterIcons.js own character art, not reused from the games
   autochess.js               UI: board/HP-bar rendering, Fight/Pause/Instant/
@@ -183,7 +191,7 @@ test/
 ## Testing
 
 ```bash
-npm test           # node --test: pure-logic unit tests (53 tests)
+npm test           # node --test: pure-logic unit tests (59 tests)
 npm run test:smoke # Playwright smoke test (needs `npm install` first)
 ```
 
@@ -194,8 +202,10 @@ directly — including each Autochess mechanic in isolation (the hive
 counter firing at exactly 3 linked and not at 2, cornering preferring a
 surrounded enemy over a merely-nearer open one, group movement's ally-
 distance tie-break, forward-only blocking a backward step, the Draughts
-Champion's promotion, and the drafting phase's swap/footprint/locking
-rules). The Playwright test serves the repo over plain HTTP (ES module
+Champion's promotion, the drafting phase's swap/footprint/locking rules,
+and seeded combat variance's ±15% bound, cross-seed variation, and
+same-seed reproducibility). The Playwright test serves the repo over plain
+HTTP (ES module
 `<script>` tags are blocked by CORS when opened via `file://`), opens each
 board, plays one legal move (for Autochess: swaps two units in the draft
 phase, then resolves the battle instantly), and checks the squares stay at
@@ -207,9 +217,8 @@ Standard rules for both games, hot-seat only, no computer opponent, no
 network multiplayer, no draw-by-repetition or 50-move rule. Editable player
 names, a persistent win/loss/draw history, and custom piece art for Chess
 and Checkers (tickets #21-#25) are all in, plus the Autochess mode, its own
-character art, faction mechanics, a balance pass, and a drafting phase
-(tickets #26-#31, #35-#41, #32). Autochess still has no combat randomness
-(only the obstacle layout is randomized) and doesn't yet write to the
-match-history page — tracked as the open backlog, #33-#34. `TICKETS.md` and
-the repo's GitHub issues track further work; new features and game modes
-build on top of this.
+character art, faction mechanics, a balance pass, a drafting phase, and
+seeded combat randomness (tickets #26-#31, #35-#41, #32, #33). Autochess
+doesn't yet write to the match-history page — tracked as the open backlog,
+#34. `TICKETS.md` and the repo's GitHub issues track further work; new
+features and game modes build on top of this.

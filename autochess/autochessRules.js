@@ -39,6 +39,14 @@
 //   phase to 'battle' on its first call regardless of whether the draft
 //   was touched, so every existing caller that skips straight to
 //   stepBattle/runBattle — tests included — behaves exactly as before.
+// - Combat randomness: every hit's raw damage is rolled within a tight
+//   ±15% band (state.rngState, its own seeded stream separate from the
+//   obstacle layout's) before the hive shield is applied, so replaying the
+//   same battle seed twice always deals identical damage (reproducible/
+//   testable), but two different seeds on an otherwise identical starting
+//   layout won't play out the same way. Passing { variance: false } to
+//   createInitialState (or setting state.variance = false directly, as the
+//   exact-math unit tests do) turns the roll into a flat 1x multiplier.
 
 export const BOARD_SIZE = 8;
 const HIVE_SHIELD_PER_ALLY = 1;
@@ -47,6 +55,11 @@ const PROMOTE_MULT = 1.5;
 const CHAMPION_RANGE = 2;
 const OBSTACLE_COUNT = 4;
 const DEFAULT_MAX_TICKS = 300;
+const DAMAGE_VARIANCE_MIN = 0.85;
+const DAMAGE_VARIANCE_MAX = 1.15;
+// Arbitrary odd constant, just to decorrelate the combat-variance stream
+// from the obstacle-placement stream when both derive from the same seed.
+const COMBAT_SEED_SALT = 0x9e3779b9;
 
 export const UNIT_DEFS = {
   footsoldier: { faction: 'chess', hp: 10, atk: 4, range: 1, speed: 1, name: 'Footsoldier' },
@@ -72,6 +85,28 @@ function mulberry32(seed) {
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+}
+
+// Same generator as mulberry32, but a pure step (seed in, {value, nextSeed}
+// out) instead of a closure, so its advancing state can live inside a plain
+// state object and survive cloneState/stepBattle like everything else here.
+function mulberry32Step(seed) {
+  let s = (seed + 0x6d2b79f5) | 0;
+  let t = Math.imul(s ^ (s >>> 15), 1 | s);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  const value = ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  return { value, nextSeed: s >>> 0 };
+}
+
+// Rolls the next damage multiplier and advances state.rngState in place
+// (state here is always the mutable per-tick `next` object stepBattle
+// builds). variance:false (set explicitly, e.g. by tests that need exact
+// damage math) skips the roll entirely and deals flat 1x.
+function rollDamageMultiplier(state) {
+  if (state.variance === false) return 1;
+  const { value, nextSeed } = mulberry32Step(state.rngState);
+  state.rngState = nextSeed;
+  return DAMAGE_VARIANCE_MIN + value * (DAMAGE_VARIANCE_MAX - DAMAGE_VARIANCE_MIN);
 }
 
 function seedFromInput(seed) {
@@ -116,8 +151,9 @@ export function factionTiles(faction) {
   return faction === 'chess' ? chessTiles() : checkersTiles();
 }
 
-export function createInitialState(seed) {
-  const rng = mulberry32(seedFromInput(seed));
+export function createInitialState(seed, options = {}) {
+  const seedValue = seedFromInput(seed);
+  const rng = mulberry32(seedValue);
   const units = [];
   let nextId = 0;
   const makeUnit = (type, row, col) => {
@@ -167,6 +203,11 @@ export function createInitialState(seed) {
     phase: 'draft',
     tick: 0,
     winner: null,
+    // Its own stream, salted off the same seed but independent of the
+    // obstacle-placement draws above, so adding/removing obstacle rolls
+    // later can never shift combat variance (or vice versa).
+    rngState: (seedValue ^ COMBAT_SEED_SALT) >>> 0,
+    variance: options.variance !== false,
     log: [`Battle begins: ${chessCount} Chess vs ${checkersCount} Checkers.`],
     obstacles,
     units,
@@ -178,6 +219,8 @@ function cloneState(state) {
     phase: state.phase,
     tick: state.tick,
     winner: state.winner,
+    rngState: state.rngState,
+    variance: state.variance,
     log: state.log,
     obstacles: state.obstacles.map((o) => ({ ...o })),
     units: state.units.map((u) => ({ ...u })),
@@ -329,10 +372,10 @@ function nearestAllyDistance(state, unit) {
 }
 
 function applyDamage(state, target, rawAmount, log) {
-  let amount = rawAmount;
+  let amount = Math.max(1, Math.round(rawAmount * rollDamageMultiplier(state)));
   if (target.faction === 'checkers') {
     const allies = livingAdjacentAllies(state, target);
-    amount = Math.max(1, rawAmount - allies * HIVE_SHIELD_PER_ALLY);
+    amount = Math.max(1, amount - allies * HIVE_SHIELD_PER_ALLY);
   }
   target.hp -= amount;
   if (target.hp <= 0) {

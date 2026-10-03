@@ -75,6 +75,7 @@ test('the hive shield reduces damage to a Checkers unit for each adjacent living
   const state = createInitialState(1);
   state.units = [];
   state.obstacles = [];
+  state.variance = false; // exact damage math, not the AUTOCHESS-08 roll
   // One chess attacker next to a lone checkers target with no allies around.
   state.units.push({ id: 0, type: 'footsoldier', name: 'Footsoldier', faction: 'chess', row: 3, col: 3, hp: 8, maxHp: 8, atk: 4, range: 1, speed: 1, veteran: false, alive: true });
   state.units.push({ id: 1, type: 'draughtsman', name: 'Draughtsman', faction: 'checkers', row: 3, col: 4, hp: 12, maxHp: 12, atk: 2, range: 1, speed: 1, veteran: false, alive: true });
@@ -87,6 +88,7 @@ test('hive shield: two adjacent allies each reduce incoming damage by 1', () => 
   const state = createInitialState(1);
   state.units = [];
   state.obstacles = [];
+  state.variance = false; // exact damage math, not the AUTOCHESS-08 roll
   state.units.push({ id: 0, type: 'footsoldier', name: 'Footsoldier', faction: 'chess', row: 3, col: 3, hp: 8, maxHp: 8, atk: 4, range: 1, speed: 1, veteran: false, alive: true });
   state.units.push({ id: 1, type: 'draughtsman', name: 'Draughtsman', faction: 'checkers', row: 3, col: 4, hp: 12, maxHp: 12, atk: 2, range: 1, speed: 1, veteran: false, alive: true });
   state.units.push({ id: 2, type: 'draughtsman', name: 'Draughtsman', faction: 'checkers', row: 2, col: 4, hp: 12, maxHp: 12, atk: 2, range: 1, speed: 1, veteran: false, alive: true });
@@ -101,6 +103,7 @@ test('Draughts Lord double-hits: two damage instances against the same target in
   const state = createInitialState(1);
   state.units = [];
   state.obstacles = [];
+  state.variance = false; // exact damage math, not the AUTOCHESS-08 roll
   state.units.push({ id: 0, type: 'draughtslord', name: 'Draughts Lord', faction: 'checkers', row: 3, col: 3, hp: 18, maxHp: 18, atk: 3, range: 1, speed: 1, doubleHit: true, veteran: false, alive: true });
   state.units.push({ id: 1, type: 'footsoldier', name: 'Footsoldier', faction: 'chess', row: 3, col: 4, hp: 20, maxHp: 20, atk: 4, range: 1, speed: 1, veteran: false, alive: true });
   const next = stepBattle(state);
@@ -350,4 +353,67 @@ test('a battle run straight from createInitialState (skipping the draft API enti
   const r1 = runBattle(createInitialState('draft-compat-1'));
   assert.ok(['chess', 'checkers', 'draw'].includes(r1.winner));
   assert.equal(r1.phase, 'battle');
+});
+
+// AUTOCHESS-08: seeded combat randomness.
+
+function singleAttackerSetup(seed, atk) {
+  const state = createInitialState(seed);
+  state.units = [];
+  state.obstacles = [];
+  state.units.push({
+    id: 0, type: 'footsoldier', name: 'Footsoldier', faction: 'chess', row: 3, col: 3,
+    hp: 8, maxHp: 8, atk, range: 1, speed: 1, doubleHit: false, veteran: false, alive: true,
+  });
+  // A lone, harmless, high-hp dummy: it never fights back or dies, so the
+  // only thing that changes its hp is the attacker's one roll this tick.
+  state.units.push({
+    id: 1, type: 'footsoldier', name: 'Dummy', faction: 'checkers', row: 3, col: 4,
+    hp: 1000, maxHp: 1000, atk: 0, range: 1, speed: 0, doubleHit: false, veteran: false, alive: true,
+  });
+  return state;
+}
+
+test('createInitialState enables combat variance by default, with its own seeded rng stream', () => {
+  const state = createInitialState(1);
+  assert.equal(state.variance, true);
+  assert.equal(typeof state.rngState, 'number');
+});
+
+test('createInitialState(seed, { variance: false }) starts with variance disabled', () => {
+  const state = createInitialState(1, { variance: false });
+  assert.equal(state.variance, false);
+});
+
+test('setting variance:false reproduces the exact pre-AUTOCHESS-08 damage math (flat atk, no roll)', () => {
+  const state = singleAttackerSetup(1, 4);
+  state.variance = false;
+  const next = stepBattle(state);
+  assert.equal(next.units.find((u) => u.id === 1).hp, 996);
+});
+
+test('combat variance keeps rolled damage within its configured ±15% band', () => {
+  for (let seed = 1; seed <= 25; seed++) {
+    const next = stepBattle(singleAttackerSetup(seed, 4));
+    const dealt = 1000 - next.units.find((u) => u.id === 1).hp;
+    // atk 4 * [0.85, 1.15] = [3.4, 4.6], which only ever rounds to 3, 4 or 5.
+    assert.ok(dealt >= 3 && dealt <= 5, `damage ${dealt} (seed ${seed}) outside the ±15% band around atk 4`);
+  }
+});
+
+test('combat variance makes an identical formation deal different damage across different seeds', () => {
+  const dealt = new Set();
+  for (let seed = 1; seed <= 15; seed++) {
+    const next = stepBattle(singleAttackerSetup(seed, 10));
+    dealt.add(1000 - next.units.find((u) => u.id === 1).hp);
+  }
+  assert.ok(dealt.size > 1, `expected damage to vary across seeds, got only ${[...dealt]}`);
+});
+
+test('combat variance is itself deterministic: the same seed deals identical damage on every replay', () => {
+  const dealtFor = (seed) => {
+    const next = stepBattle(singleAttackerSetup(seed, 7));
+    return 1000 - next.units.find((u) => u.id === 1).hp;
+  };
+  assert.equal(dealtFor('replay-me'), dealtFor('replay-me'));
 });

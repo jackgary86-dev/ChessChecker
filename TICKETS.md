@@ -7,7 +7,7 @@ and game modes come later.
 
 All 20 tickets below (#1-#20 in the repo's GitHub issues) are done, shipped
 in commit `cf56219`. The **Next phase** section (#21-#25) and the
-**Autochess** sections (#26-#31, #35-#41, #32, plus #33-#34 backlog) track
+**Autochess** sections (#26-#31, #35-#41, #32, #33, plus #34 backlog) track
 everything after the basic build.
 
 ## Chess
@@ -202,13 +202,30 @@ Filed as GitHub issue #32. Done.
     plus a Playwright check that clicking two units swaps them before the
     fight starts.
 
+## Autochess: combat randomness
+
+Filed as GitHub issue #33. Done.
+
+33. **AUTOCHESS-08** — Controlled, seeded randomness in combat. Every hit's
+    raw damage now rolls within a ±15% band before the hive shield is
+    applied, using its own seeded rng stream (`state.rngState`, salted off
+    the battle seed so it never interferes with the obstacle-layout draws).
+    Same seed replayed twice still deals identical damage every time
+    (reproducible/testable — `node --test` enforces this), but two
+    different seeds on an otherwise identical starting layout no longer
+    play out the same way. `createInitialState(seed, { variance: false })`
+    (or setting `state.variance = false` directly, as the pre-existing
+    exact-damage-math tests now do) turns the roll into a flat 1x
+    multiplier, so every prior test kept its exact assertions unchanged.
+    6 new unit tests cover the default-on behavior, the opt-out, the ±15%
+    bound, cross-seed variation, and same-seed reproducibility; the
+    AUTOCHESS-06 balance-regression test (both factions 35%-65% over 300
+    battles) still passes with variance on by default.
+
 ### Autochess next phase (not built — backlog)
 
-Filed as GitHub issues #33-#34. Planning only.
+Filed as GitHub issue #34. Planning only.
 
-33. **AUTOCHESS-08** — Controlled randomness in combat (seeded, so still
-    reproducible/testable) so refighting the same starting layout doesn't
-    always produce the exact same result.
 34. **AUTOCHESS-09** — Record autochess results into the existing
     win/loss/draw match-history system (currently only Chess and Checkers
     write to it).
