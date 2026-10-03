@@ -54,22 +54,46 @@ King), Checkers lines up in its classic starting rows (reskinned as
 Draughtsman, with two pre-kinged Draughts Lords), and four random tiles in
 the middle rows are blocked each battle. Press **Fight!** to watch it
 resolve automatically, tick by tick (**Resolve instantly** skips straight
-to the result), or **New battle** for a fresh random layout.
+to the result), or **New battle** for a fresh random layout. Units are
+drawn as their own small characters (`chessCharacterIcons.js`,
+`checkersCharacterIcons.js`), not the plain board-piece icons the Chess and
+Checkers games use.
 
-The two sides play differently on purpose: **Chess is offense** — higher
-attack and mobility, every unit just goes for the nearest enemy on its own.
-**Checkers is defense** — lower raw stats, but every living Checkers unit
-reduces incoming damage by 1 for each adjacent living Checkers ally, so
-they're toughest while clustered together (the "hive mind"). **Chess loses
-instantly if its High King falls**, even with other units still
-standing — Checkers loses only once every unit is down. A Footsoldier or
-Draughtsman that reaches the far row is promoted to a stronger Veteran.
-AUTOCHESS-06's balance pass (dropping Draughtsman HP from 14 to 13, the
-single cleanest lever found by grid-searching several stat tweaks) brought
-this from an initial 42% Chess / 53% Checkers / 5% draw to roughly 47%
-Chess / 49% Checkers / 4% draw across 3,000 simulated battles — within
-about a point and a half of even. A regression test keeps both factions'
-win rate between 35% and 65% going forward.
+The two sides play differently on purpose:
+
+- **Chess is offense, fought as individuals.** Higher attack and mobility,
+  no team mechanic — every unit just goes for the nearest enemy on its
+  own. A mix of melee (Footsoldier, Bulwark, High King) and ranged
+  (Lancer, Cleric, Warqueen) — ranged-heavy overall, hitting from further
+  out. Chess loses the instant its High King falls, even with other units
+  still standing.
+- **Checkers is defense, fought as a hive — melee only.** Lower raw
+  stats, but the group itself is the weapon:
+  - **Hive shield** — 1 damage reduced for each adjacent living Checkers
+    ally (minimum 1 still lands).
+  - **Hive counter** — a Checkers unit struck while part of a chain of 3
+    or more linked living allies immediately strikes back.
+  - **Group movement** — when a few steps are equally good, a Checkers
+    unit prefers the one that keeps it closest to its nearest ally, so
+    the group moves and clusters together instead of scattering.
+  - **Cornering** — a Checkers unit's target isn't just the nearest
+    enemy; one with fewer free adjacent tiles (already more surrounded)
+    is preferred, so the group converges on and traps the same target.
+  - **Forward-only** — a base Draughtsman can only move with a forward
+    row-component, the same as a real (un-kinged) checkers man; Draughts
+    Lords move freely.
+  - Checkers loses only once every unit is down.
+- **Promotion, both sides.** A Footsoldier reaching the far row becomes a
+  stronger Veteran — same role, just tougher. A Draughtsman reaching the
+  far row becomes a **Draughts Champion**: free movement, ranged, and a
+  bonus strike — the hive's purely defensive melee unit breaks away and
+  becomes a lone offensive threat, the way a checkers man becomes a king.
+
+Balance: after all of the above, a second pass (Footsoldier HP 8→10,
+Draughtsman HP 13→11, keeping the hive-counter threshold at exactly 3 as
+designed) brought the split to roughly 47.6% Chess / 47.7% Checkers / 4.7%
+draw across 3,000 simulated battles. A regression test keeps both
+factions' win rate between 35% and 65% going forward.
 
 ## Run it locally
 
@@ -121,12 +145,16 @@ checkers/
   style.css
 autochess/
   index.html
-  autochessRules.js       pure battle engine (no DOM) — starting formations,
-                           one simulation tick, full-battle runner, all
-                           deterministic for a given seed
-  chessPieceIcons.js, checkersPieceIcons.js  reused for unit art
-  autochess.js             UI: board/HP-bar rendering, Fight/Pause/Instant/
-                            New battle, battle log
+  autochessRules.js         pure battle engine (no DOM) — starting
+                             formations, targeting (incl. Checkers'
+                             cornering), movement (incl. group cohesion and
+                             forward-only), the hive shield/counter,
+                             promotion, one simulation tick, a full-battle
+                             runner — deterministic for a given seed
+  chessCharacterIcons.js,
+  checkersCharacterIcons.js own character art, not reused from the games
+  autochess.js               UI: board/HP-bar rendering, Fight/Pause/Instant/
+                              New battle, battle log
   style.css
 playerNames.js       pure name normalization (NAMES-02) + localStorage IO
 historyLogic.js      pure match-history logic (HISTORY-01): append/summarize/
@@ -150,25 +178,32 @@ test/
 ## Testing
 
 ```bash
-npm test           # node --test: pure-logic unit tests (37 tests)
+npm test           # node --test: pure-logic unit tests (45 tests)
 npm run test:smoke # Playwright smoke test (needs `npm install` first)
 ```
 
 The pure-logic modules (`chessRules.js`, `checkersRules.js`, `historyLogic.js`,
-`playerNames.js`'s `normalizeNames`) have no DOM or localStorage dependency,
-so the unit tests import and exercise them directly. The Playwright test
-serves the repo over plain HTTP (ES module `<script>` tags are blocked by
-CORS when opened via `file://`), opens each board, plays one legal move, and
-checks the squares stay at least 40px even at a 390px-wide viewport.
+`playerNames.js`'s `normalizeNames`, `autochessRules.js`) have no DOM or
+localStorage dependency, so the unit tests import and exercise them
+directly — including each Autochess mechanic in isolation (the hive
+counter firing at exactly 3 linked and not at 2, cornering preferring a
+surrounded enemy over a merely-nearer open one, group movement's ally-
+distance tie-break, forward-only blocking a backward step, and the
+Draughts Champion's promotion). The Playwright test serves the repo over
+plain HTTP (ES module `<script>` tags are blocked by CORS when opened via
+`file://`), opens each board, plays one legal move (or resolves an
+Autochess battle instantly), and checks the squares stay at least 40px even
+at a 390px-wide viewport.
 
 ## What's basic vs. what's next
 
 Standard rules for both games, hot-seat only, no computer opponent, no
 network multiplayer, no draw-by-repetition or 50-move rule. Editable player
-names, a persistent win/loss/draw history, and custom piece art (tickets
-#21-#25) are all in, plus the Autochess mode. Autochess v1 is deliberately
-simple: fixed classic starting formations (no drafting or placement phase),
-deterministic combat (no damage variance — only the obstacle layout is
-randomized), and a first-pass balance. `TICKETS.md` and the repo's GitHub
-issues track further work; new features and game modes build on top of
-this.
+names, a persistent win/loss/draw history, and custom piece art for Chess
+and Checkers (tickets #21-#25) are all in, plus the Autochess mode and its
+own character art, faction mechanics, and balance pass (tickets #26-#31,
+#35-#41). Autochess still has no drafting/placement phase, no combat
+randomness (only the obstacle layout is randomized), and doesn't yet write
+to the match-history page — tracked as the open backlog, #32-#34.
+`TICKETS.md` and the repo's GitHub issues track further work; new features
+and game modes build on top of this.

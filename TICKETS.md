@@ -7,7 +7,7 @@ and game modes come later.
 
 All 20 tickets below (#1-#20 in the repo's GitHub issues) are done, shipped
 in commit `cf56219`. The **Next phase** section (#21-#25) and the
-**Autochess** section (#26-#31, plus #32-#34 backlog) track everything
+**Autochess** sections (#26-#31, #35-#41, plus #32-#34 backlog) track everything
 after the basic build.
 
 ## Chess
@@ -124,6 +124,62 @@ A third mode: Chess vs Checkers, auto-battling. Filed as GitHub issues
     Checkers / 4% draw over 3,000 battles — within about a point and a
     half of even. Added a regression test (`test/autochessRules.test.js`)
     that keeps both factions' win rate between 35% and 65% going forward.
+
+## Autochess: characters, faction mechanics, and a second balance pass
+
+Filed as GitHub issues #35-#41. All seven are done.
+
+35. **AUTOCHESS-10** — Custom character art (`chessCharacterIcons.js`,
+    `checkersCharacterIcons.js`), replacing the reused chess/checkers
+    board-piece icons from AUTOCHESS-04. Small humanoid figures for Chess
+    (each with a prop that shows its role — sword, javelin, staff, shield,
+    scepter, crown), round "disc warrior" figures for Checkers that keep
+    the board-piece identity. A promoted Draughts Champion visually breaks
+    from the round hive-body into an angular, winged, gold-tinted
+    attacker. Built only from rects/polygons/circles, same lesson as
+    ART-01: freehand curves didn't render recognizably at this size.
+36. **AUTOCHESS-11** — Chess leans ranged: Lancer became a ranged javelin
+    unit (was melee) and Cleric's range extended from 2 to 3, alongside
+    the already-ranged Warqueen. Chess is now a 3-melee/3-ranged mix
+    (Footsoldier, Bulwark, High King vs Lancer, Cleric, Warqueen),
+    ranged-heavy in practice since the ranged units also hit hardest.
+    Checkers stays melee-only (confirmed: both Draughtsman and Draughts
+    Lord are range 1).
+37. **AUTOCHESS-12** — Checkers group movement: `stepToward` now scores
+    every equally-valid step for a Checkers unit by distance to its
+    nearest living ally and prefers the closest, so the hive moves and
+    clusters together turn over turn instead of each unit pathing
+    independently.
+38. **AUTOCHESS-13** — Checkers cornering: target selection
+    (`findCorneredEnemy`) scores enemies by distance *and* how many free
+    adjacent tiles they have left, preferring an already-more-surrounded
+    enemy over a merely-nearer open one — the group converges on and traps
+    the same target instead of spreading its attacks thin.
+39. **AUTOCHESS-14** — Hive counter-attack: a Checkers unit struck while
+    part of a chain-linked group of 3 or more living Checkers allies
+    (`linkedGroupSize`, a BFS over adjacency — A-B-C counts even when A
+    and C aren't themselves adjacent) immediately strikes back at its
+    attacker for its own ATK.
+40. **AUTOCHESS-15** — Forward-only movement and the Draughts Champion
+    promotion. A base Draughtsman can now only move with a forward
+    row-component, same as a real un-kinged checkers man; Draughts Lords
+    (and promoted Draughtsmen) move freely. A Draughtsman reaching the far
+    row promotes to a **Draughts Champion**: the usual 1.5x hp/atk boost,
+    plus range 2, a bonus strike (`doubleHit`), and freedom from the
+    forward-only restriction — the hive's purely defensive melee unit
+    becomes a lone offensive threat, echoing a checkers man becoming a
+    king.
+41. **AUTOCHESS-16** — Second balance pass, after all of the above
+    significantly shifted the matchup (an interim check showed Checkers
+    winning roughly 70-75% of battles). Explicitly kept the hive-counter
+    threshold at exactly 3 linked allies rather than tuning it away for
+    balance. Grid-searched Footsoldier/Draughtsman hp and atk instead;
+    Footsoldier hp 8→10 and Draughtsman hp 13→11 brought the split to
+    roughly 47.6% Chess / 47.7% Checkers / 4.7% draw over 3,000 battles.
+    8 new unit tests cover the new mechanics individually (group movement,
+    cornering, the counter firing at exactly 3 linked and not at 2,
+    forward-only blocking, Draughts Lord/Champion exemption from it, and
+    Champion promotion's range/doubleHit/name change).
 
 ### Autochess next phase (not built — backlog)
 

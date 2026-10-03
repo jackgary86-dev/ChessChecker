@@ -4,31 +4,50 @@
 //
 // Design:
 // - Chess = offense, individuals: higher ATK and mobility, no team bonuses,
-//   each unit always just goes for the nearest enemy on its own.
-// - Checkers = defense, hive mind: lower raw stats, but every living
-//   Checkers unit reduces damage it takes by 1 per adjacent living Checkers
-//   ally (minimum 1 damage always gets through) — defense through numbers
-//   and closeness, not individual toughness.
+//   each unit always just goes for the nearest enemy on its own. A mix of
+//   melee (Footsoldier, Bulwark, High King) and ranged (Lancer, Cleric,
+//   Warqueen) — ranged-heavy overall, hitting from further out.
+// - Checkers = defense, hive mind, melee only: lower raw stats, but
+//   several linked mechanics make the group itself dangerous —
+//     - Hive shield: 1 damage reduced per adjacent living Checkers ally
+//       (minimum 1 damage always gets through).
+//     - Hive counter: a Checkers unit struck while part of a chain of 3+
+//       linked living Checkers allies immediately strikes back.
+//     - Group movement: when several forward steps are equally valid, a
+//       Checkers unit prefers the one that keeps it closest to its nearest
+//       living ally, so they move and cluster together.
+//     - Cornering: a Checkers unit's target isn't just the nearest enemy —
+//       an enemy with fewer free adjacent tiles (more already surrounded)
+//       is preferred, so the group converges on and traps targets.
+//     - Forward-only movement: a base Draughtsman can only move with a
+//       forward row-component, same as a real (un-kinged) checkers man;
+//       Draughts Lords and promoted Draughtsmen move in any direction.
 // - Chess loses the instant its High King dies (echoes checkmate); Checkers
 //   loses when every unit is dead (echoes "no pieces left"). Asymmetric on
 //   purpose.
-// - A Footsoldier/Draughtsman that reaches the enemy's home row promotes to
-//   a stronger "Veteran" once (echoes pawn promotion / checkers kinging).
+// - A Footsoldier that reaches the enemy's home row promotes to a stronger
+//   Veteran (echoes pawn promotion: same role, just stronger). A
+//   Draughtsman that reaches the enemy's home row promotes to a Draughts
+//   Champion: free movement, ranged, and a bonus strike — the hive's
+//   purely defensive melee unit becomes a lone offensive threat, the way
+//   a checkers man becomes a king.
 
 export const BOARD_SIZE = 8;
 const HIVE_SHIELD_PER_ALLY = 1;
+const HIVE_COUNTER_GROUP_SIZE = 3;
 const PROMOTE_MULT = 1.5;
+const CHAMPION_RANGE = 2;
 const OBSTACLE_COUNT = 4;
 const DEFAULT_MAX_TICKS = 300;
 
 export const UNIT_DEFS = {
-  footsoldier: { faction: 'chess', hp: 8, atk: 4, range: 1, speed: 1, name: 'Footsoldier' },
-  lancer: { faction: 'chess', hp: 12, atk: 6, range: 1, speed: 2, name: 'Lancer' },
-  cleric: { faction: 'chess', hp: 10, atk: 5, range: 2, speed: 1, name: 'Cleric' },
+  footsoldier: { faction: 'chess', hp: 10, atk: 4, range: 1, speed: 1, name: 'Footsoldier' },
+  lancer: { faction: 'chess', hp: 11, atk: 5, range: 2, speed: 2, name: 'Lancer' },
+  cleric: { faction: 'chess', hp: 9, atk: 5, range: 3, speed: 1, name: 'Cleric' },
   bulwark: { faction: 'chess', hp: 16, atk: 4, range: 1, speed: 1, name: 'Bulwark' },
-  warqueen: { faction: 'chess', hp: 16, atk: 8, range: 2, speed: 2, name: 'Warqueen' },
+  warqueen: { faction: 'chess', hp: 15, atk: 7, range: 2, speed: 2, name: 'Warqueen' },
   highking: { faction: 'chess', hp: 14, atk: 5, range: 1, speed: 1, name: 'High King' },
-  draughtsman: { faction: 'checkers', hp: 13, atk: 2, range: 1, speed: 1, name: 'Draughtsman' },
+  draughtsman: { faction: 'checkers', hp: 11, atk: 2, range: 1, speed: 1, name: 'Draughtsman' },
   draughtslord: {
     faction: 'checkers', hp: 20, atk: 4, range: 1, speed: 1, name: 'Draughts Lord', doubleHit: true,
   },
@@ -79,6 +98,7 @@ export function createInitialState(seed) {
       atk: def.atk,
       range: def.range,
       speed: def.speed,
+      doubleHit: !!def.doubleHit,
       veteran: false,
       alive: true,
     };
@@ -141,6 +161,23 @@ function inBounds(row, col) {
   return row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE;
 }
 
+function freeAdjacentTiles(state, unit) {
+  let free = 0;
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      if (dr === 0 && dc === 0) continue;
+      const r = unit.row + dr;
+      const c = unit.col + dc;
+      if (!inBounds(r, c)) continue; // off-board isn't a free escape tile
+      if (isObstacle(state, r, c)) continue;
+      if (isOccupied(state, r, c, unit.id)) continue;
+      free++;
+    }
+  }
+  return free;
+}
+
+// Chess (individualist): always the plain nearest living enemy.
 function findNearestEnemy(state, unit) {
   let best = null;
   let bestDist = Infinity;
@@ -155,6 +192,29 @@ function findNearestEnemy(state, unit) {
   return best;
 }
 
+// Checkers (hive): prefers a target that is both close AND already more
+// cornered (fewer free adjacent tiles), so the group converges on and
+// traps the same enemy instead of each unit picking its own.
+function findCorneredEnemy(state, unit) {
+  let best = null;
+  let bestScore = Infinity;
+  for (const u of state.units) {
+    if (!u.alive || u.faction === unit.faction) continue;
+    const dist = chebyshev(unit, u);
+    const free = freeAdjacentTiles(state, u);
+    const score = dist + free; // lower = closer and/or more surrounded
+    if (score < bestScore || (score === bestScore && (best === null || u.id < best.id))) {
+      best = u;
+      bestScore = score;
+    }
+  }
+  return best;
+}
+
+function findTarget(state, unit) {
+  return unit.faction === 'checkers' ? findCorneredEnemy(state, unit) : findNearestEnemy(state, unit);
+}
+
 function livingAdjacentAllies(state, unit) {
   let count = 0;
   for (const u of state.units) {
@@ -162,6 +222,35 @@ function livingAdjacentAllies(state, unit) {
     if (chebyshev(u, unit) === 1) count++;
   }
   return count;
+}
+
+// Size of the chain-linked group of living same-faction units unit belongs
+// to (itself included): A-B adjacent and B-C adjacent counts A, B and C as
+// one linked group of 3, even though A and C aren't themselves adjacent.
+function linkedGroupSize(state, unit) {
+  const visited = new Set([unit.id]);
+  const queue = [unit];
+  while (queue.length) {
+    const cur = queue.pop();
+    for (const u of state.units) {
+      if (!u.alive || u.faction !== unit.faction || visited.has(u.id)) continue;
+      if (chebyshev(u, cur) === 1) {
+        visited.add(u.id);
+        queue.push(u);
+      }
+    }
+  }
+  return visited.size;
+}
+
+function nearestAllyDistance(state, unit) {
+  let best = Infinity;
+  for (const u of state.units) {
+    if (u.id === unit.id || !u.alive || u.faction !== unit.faction) continue;
+    const d = chebyshev(unit, u);
+    if (d < best) best = d;
+  }
+  return best;
 }
 
 function applyDamage(state, target, rawAmount, log) {
@@ -182,27 +271,69 @@ function applyDamage(state, target, rawAmount, log) {
 function attack(state, attacker, target, log) {
   const dealt = applyDamage(state, target, attacker.atk, log);
   log.push(`${attacker.name} #${attacker.id} hits ${target.name} #${target.id} for ${dealt}.`);
-  if (UNIT_DEFS[attacker.type].doubleHit && target.alive) {
+  if (attacker.doubleHit && target.alive) {
     const dealt2 = applyDamage(state, target, attacker.atk, log);
     log.push(`${attacker.name} #${attacker.id} strikes again for ${dealt2}.`);
   }
+  // Hive counter: a Checkers unit struck while linked to 2+ other living
+  // Checkers allies (a chain of 3 or more) strikes straight back.
+  if (target.faction === 'checkers' && target.alive && attacker.alive) {
+    const groupSize = linkedGroupSize(state, target);
+    if (groupSize >= HIVE_COUNTER_GROUP_SIZE) {
+      const counterDealt = applyDamage(state, attacker, target.atk, log);
+      log.push(
+        `${target.name} #${target.id}'s hive (${groupSize} linked) counter-attacks `
+        + `${attacker.name} #${attacker.id} for ${counterDealt}!`,
+      );
+    }
+  }
+}
+
+// A base Draughtsman moves like a real (un-kinged) checkers man: forward
+// only, toward the enemy home row. Draughts Lords and promoted Draughtsmen
+// (now Champions) move freely, like a kinged piece.
+function isForwardOnly(unit) {
+  return unit.type === 'draughtsman' && !unit.veteran;
+}
+
+function forwardRowSign(unit) {
+  return unit.faction === 'chess' ? 1 : -1;
 }
 
 function stepToward(state, unit, target) {
   const dr = Math.sign(target.row - unit.row);
   const dc = Math.sign(target.col - unit.col);
-  const tries = [];
+  let tries = [];
   if (dr !== 0 && dc !== 0) tries.push([dr, dc]);
   if (dr !== 0) tries.push([dr, 0]);
   if (dc !== 0) tries.push([0, dc]);
-  for (const [stepR, stepC] of tries) {
-    const nr = unit.row + stepR;
-    const nc = unit.col + stepC;
-    if (inBounds(nr, nc) && !isObstacle(state, nr, nc) && !isOccupied(state, nr, nc, unit.id)) {
-      return { row: nr, col: nc };
+
+  if (isForwardOnly(unit)) {
+    const fwd = forwardRowSign(unit);
+    tries = tries.filter(([stepR]) => stepR === fwd);
+  }
+
+  const valid = tries
+    .map(([stepR, stepC]) => ({ row: unit.row + stepR, col: unit.col + stepC }))
+    .filter(({ row, col }) => inBounds(row, col) && !isObstacle(state, row, col) && !isOccupied(state, row, col, unit.id));
+
+  if (valid.length === 0) return null;
+  if (valid.length === 1 || unit.faction !== 'checkers') return valid[0];
+
+  // Checkers group movement: among equally-reachable steps, prefer the one
+  // that stays closest to the nearest living Checkers ally, so the hive
+  // moves and clusters together rather than scattering.
+  let best = valid[0];
+  let bestAllyDist = Infinity;
+  for (const candidate of valid) {
+    const probe = { ...unit, row: candidate.row, col: candidate.col };
+    const d = nearestAllyDistance(state, probe);
+    if (d < bestAllyDist) {
+      bestAllyDist = d;
+      best = candidate;
     }
   }
-  return null;
+  return best;
 }
 
 function moveUnit(state, unit, target, log) {
@@ -226,12 +357,22 @@ function checkPromotion(unit, log) {
   unit.maxHp = Math.round(unit.maxHp * PROMOTE_MULT);
   unit.hp = Math.min(unit.maxHp, Math.round(unit.hp * PROMOTE_MULT));
   unit.atk = Math.round(unit.atk * PROMOTE_MULT);
-  log.push(`${unit.name} #${unit.id} is promoted to Veteran!`);
+  if (unit.type === 'draughtsman') {
+    // The hive's purely defensive melee unit breaks away and becomes a
+    // lone offensive threat: ranged, double-striking, free to move any
+    // direction — a checkers man crowned into a king.
+    unit.range = CHAMPION_RANGE;
+    unit.doubleHit = true;
+    unit.name = 'Draughts Champion';
+    log.push(`${unit.name} #${unit.id} breaks from the hive and is crowned a Champion!`);
+  } else {
+    log.push(`${unit.name} #${unit.id} is promoted to Veteran!`);
+  }
 }
 
 function unitAct(state, unit, log) {
   if (!unit.alive) return;
-  const enemy = findNearestEnemy(state, unit);
+  const enemy = findTarget(state, unit);
   if (!enemy) return;
   if (chebyshev(unit, enemy) <= unit.range) {
     attack(state, unit, enemy, log);

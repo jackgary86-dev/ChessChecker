@@ -100,7 +100,7 @@ test('Draughts Lord double-hits: two damage instances against the same target in
   const state = createInitialState(1);
   state.units = [];
   state.obstacles = [];
-  state.units.push({ id: 0, type: 'draughtslord', name: 'Draughts Lord', faction: 'checkers', row: 3, col: 3, hp: 18, maxHp: 18, atk: 3, range: 1, speed: 1, veteran: false, alive: true });
+  state.units.push({ id: 0, type: 'draughtslord', name: 'Draughts Lord', faction: 'checkers', row: 3, col: 3, hp: 18, maxHp: 18, atk: 3, range: 1, speed: 1, doubleHit: true, veteran: false, alive: true });
   state.units.push({ id: 1, type: 'footsoldier', name: 'Footsoldier', faction: 'chess', row: 3, col: 4, hp: 20, maxHp: 20, atk: 4, range: 1, speed: 1, veteran: false, alive: true });
   const next = stepBattle(state);
   // tick 0 is chess-first, so footsoldier (id1) attacks the lord first (-4 hp),
@@ -144,6 +144,124 @@ test('UNIT_DEFS has stats for every unit type used in the starting roster', () =
   for (const u of state.units) {
     assert.ok(UNIT_DEFS[u.type], `missing UNIT_DEFS for ${u.type}`);
   }
+});
+
+test('hive counter: a Checkers unit struck while linked to 2+ allies (a chain of 3+) strikes back', () => {
+  const state = createInitialState(1);
+  state.units = [];
+  state.obstacles = [];
+  // Chain: A(3,4)-B(2,4)-C(1,4), each link adjacent to the next, so A is in
+  // a linked group of 3 even though A and C aren't themselves adjacent.
+  state.units.push({ id: 0, type: 'footsoldier', name: 'Footsoldier', faction: 'chess', row: 3, col: 3, hp: 8, maxHp: 8, atk: 4, range: 1, speed: 1, doubleHit: false, veteran: false, alive: true });
+  state.units.push({ id: 1, type: 'draughtsman', name: 'Draughtsman', faction: 'checkers', row: 3, col: 4, hp: 13, maxHp: 13, atk: 2, range: 1, speed: 1, doubleHit: false, veteran: true, alive: true });
+  state.units.push({ id: 2, type: 'draughtsman', name: 'Draughtsman', faction: 'checkers', row: 2, col: 4, hp: 13, maxHp: 13, atk: 2, range: 1, speed: 1, doubleHit: false, veteran: true, alive: true });
+  state.units.push({ id: 3, type: 'draughtsman', name: 'Draughtsman', faction: 'checkers', row: 1, col: 4, hp: 13, maxHp: 13, atk: 2, range: 1, speed: 1, doubleHit: false, veteran: true, alive: true });
+  const next = stepBattle(state);
+  // Checked via the log rather than final HP: a full tick also lets A, B
+  // and C each take their own ordinary turn (and the cornering logic has
+  // them all converge on the same lone attacker too), so the attacker's
+  // final HP reflects a lot more than just the counter. The log message is
+  // the precise, isolated signal that the counter mechanic itself fired.
+  assert.ok(
+    next.log.some((line) => /hive \(3 linked\) counter-attacks/.test(line)),
+    'expected a hive counter-attack log entry for a linked group of 3',
+  );
+});
+
+test('no counter when fewer than 3 Checkers units are linked together', () => {
+  const state = createInitialState(1);
+  state.units = [];
+  state.obstacles = [];
+  state.units.push({ id: 0, type: 'footsoldier', name: 'Footsoldier', faction: 'chess', row: 3, col: 3, hp: 8, maxHp: 8, atk: 4, range: 1, speed: 1, doubleHit: false, veteran: false, alive: true });
+  state.units.push({ id: 1, type: 'draughtsman', name: 'Draughtsman', faction: 'checkers', row: 3, col: 4, hp: 13, maxHp: 13, atk: 2, range: 1, speed: 1, doubleHit: false, veteran: true, alive: true });
+  state.units.push({ id: 2, type: 'draughtsman', name: 'Draughtsman', faction: 'checkers', row: 2, col: 4, hp: 13, maxHp: 13, atk: 2, range: 1, speed: 1, doubleHit: false, veteran: true, alive: true });
+  const next = stepBattle(state);
+  assert.ok(
+    !next.log.some((line) => /counter-attacks/.test(line)),
+    'only 2 linked: no counter-attack should fire',
+  );
+});
+
+test('cornering: Checkers prefers a more-surrounded enemy over a merely-nearer open one', () => {
+  const state = createInitialState(1);
+  state.units = [];
+  // Wall the "cornered" enemy in on three sides with obstacles, leaving it
+  // only one way out, while the "open" enemy (equally far) has no obstacles
+  // around it at all.
+  state.obstacles = [{ row: 2, col: 1 }, { row: 3, col: 1 }, { row: 4, col: 1 }];
+  state.units.push({ id: 0, type: 'draughtsman', name: 'Draughtsman', faction: 'checkers', row: 3, col: 4, hp: 13, maxHp: 13, atk: 2, range: 1, speed: 1, doubleHit: false, veteran: true, alive: true });
+  // veteran:true so forward-only restriction (tested separately below)
+  // doesn't block the sideways step this scenario needs.
+  // Both decoys are immobile (speed 0) so they don't themselves close the
+  // distance before the checkers unit's own turn — this isolates target
+  // *selection*, not an emergent side effect of who moves first this tick.
+  state.units.push({ id: 1, type: 'footsoldier', name: 'Cornered', faction: 'chess', row: 3, col: 2, hp: 8, maxHp: 8, atk: 0, range: 1, speed: 0, doubleHit: false, veteran: false, alive: true });
+  state.units.push({ id: 2, type: 'footsoldier', name: 'Open', faction: 'chess', row: 3, col: 6, hp: 8, maxHp: 8, atk: 0, range: 1, speed: 0, doubleHit: false, veteran: false, alive: true });
+  const next = stepBattle(state);
+  const mover = next.units.find((u) => u.id === 0);
+  // Both enemies are equally far (distance 2); the checkers unit should
+  // advance toward the cornered one (col decreasing toward 2), not the
+  // open one (which would mean col increasing toward 6).
+  assert.equal(mover.col, 3, 'expected the checkers unit to step toward the cornered enemy');
+});
+
+test('group movement: Checkers prefers the step that stays closest to an ally', () => {
+  const state = createInitialState(1);
+  state.units = [];
+  // Block the diagonal step so the only choice left is between a pure-row
+  // step (3,3)->(2,3) or a pure-col step (3,3)->(3,2); only the pure-col
+  // step stays adjacent to the ally at (3,1).
+  state.obstacles = [{ row: 2, col: 2 }];
+  state.units.push({ id: 0, type: 'draughtsman', name: 'Draughtsman', faction: 'checkers', row: 3, col: 3, hp: 13, maxHp: 13, atk: 2, range: 1, speed: 1, doubleHit: false, veteran: true, alive: true });
+  state.units.push({ id: 1, type: 'draughtsman', name: 'Ally', faction: 'checkers', row: 3, col: 1, hp: 13, maxHp: 13, atk: 2, range: 1, speed: 1, doubleHit: false, veteran: true, alive: true });
+  state.units.push({ id: 2, type: 'footsoldier', name: 'Footsoldier', faction: 'chess', row: 0, col: 0, hp: 1000, maxHp: 1000, atk: 0, range: 0, speed: 0, doubleHit: false, veteran: false, alive: true });
+  const next = stepBattle(state);
+  const mover = next.units.find((u) => u.id === 0);
+  assert.equal(mover.row, 3);
+  assert.equal(mover.col, 2);
+});
+
+test('a base Draughtsman cannot step backward (forward-only, like an un-kinged checkers man)', () => {
+  const state = createInitialState(1);
+  state.units = [];
+  state.obstacles = [];
+  // Draughtsman's forward direction is toward row 0. An enemy directly
+  // behind it (higher row) gives it nowhere legal to step.
+  state.units.push({ id: 0, type: 'draughtsman', name: 'Draughtsman', faction: 'checkers', row: 3, col: 3, hp: 13, maxHp: 13, atk: 2, range: 1, speed: 1, doubleHit: false, veteran: false, alive: true });
+  state.units.push({ id: 1, type: 'footsoldier', name: 'Footsoldier', faction: 'chess', row: 6, col: 3, hp: 1000, maxHp: 1000, atk: 0, range: 1, speed: 0, doubleHit: false, veteran: false, alive: true });
+  const next = stepBattle(state);
+  const mover = next.units.find((u) => u.id === 0);
+  assert.equal(mover.row, 3, 'a forward-only Draughtsman must not retreat toward the enemy behind it');
+  assert.equal(mover.col, 3);
+});
+
+test('a Draughts Lord (not forward-restricted) can step toward an enemy behind it', () => {
+  const state = createInitialState(1);
+  state.units = [];
+  state.obstacles = [];
+  state.units.push({ id: 0, type: 'draughtslord', name: 'Draughts Lord', faction: 'checkers', row: 3, col: 3, hp: 20, maxHp: 20, atk: 4, range: 1, speed: 1, doubleHit: true, veteran: false, alive: true });
+  state.units.push({ id: 1, type: 'footsoldier', name: 'Footsoldier', faction: 'chess', row: 6, col: 3, hp: 1000, maxHp: 1000, atk: 0, range: 1, speed: 0, doubleHit: false, veteran: false, alive: true });
+  const next = stepBattle(state);
+  const mover = next.units.find((u) => u.id === 0);
+  assert.equal(mover.row, 4, 'a Draughts Lord should be able to step toward an enemy behind it');
+});
+
+test('a Draughtsman reaching the far row becomes a Champion: ranged, double-striking, unrestricted', () => {
+  const state = createInitialState(1);
+  state.units = [];
+  state.obstacles = [];
+  state.units.push({ id: 0, type: 'draughtsman', name: 'Draughtsman', faction: 'checkers', row: 1, col: 0, hp: 13, maxHp: 13, atk: 2, range: 1, speed: 1, doubleHit: false, veteran: false, alive: true });
+  // Far, non-threatening enemy so the Draughtsman just marches to row 0 this tick.
+  state.units.push({ id: 1, type: 'footsoldier', name: 'Footsoldier', faction: 'chess', row: 0, col: 7, hp: 1000, maxHp: 1000, atk: 0, range: 0, speed: 0, doubleHit: false, veteran: false, alive: true });
+  const next = stepBattle(state);
+  const champion = next.units.find((u) => u.id === 0);
+  assert.equal(champion.row, 0);
+  assert.equal(champion.veteran, true);
+  assert.equal(champion.name, 'Draughts Champion');
+  assert.equal(champion.range, 2);
+  assert.equal(champion.doubleHit, true);
+  assert.equal(champion.maxHp, Math.round(13 * 1.5));
+  assert.equal(champion.atk, Math.round(2 * 1.5));
 });
 
 // AUTOCHESS-06 balance regression guard: not a precise target, just a wide

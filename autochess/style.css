@@ -6,10 +6,6 @@
   --accent: #4f8cff;
   --light-sq: #ebe4d3;
   --dark-sq: #5c7a4a;
-  --sel: #f4d35e;
-  --move-dot: rgba(20, 20, 20, 0.55);
-  --capture-ring: rgba(220, 60, 60, 0.85);
-  --check: rgba(220, 60, 60, 0.55);
 }
 
 * { box-sizing: border-box; }
@@ -45,7 +41,7 @@ h1 {
   justify-content: center;
 }
 
-button {
+button, select {
   background: var(--panel);
   color: var(--text);
   border: 1px solid #3a3d46;
@@ -57,31 +53,36 @@ button {
 button:hover { border-color: var(--accent); }
 button:active { transform: translateY(1px); }
 button.primary { background: var(--accent); border-color: var(--accent); color: #0c1220; font-weight: 600; }
+button:disabled { opacity: 0.5; cursor: default; transform: none; }
 
-.status-row {
+.hidden { display: none !important; }
+
+footer.hint, p.hint {
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-align: center;
+  max-width: 560px;
+}
+
+.faction-counts {
   display: flex;
-  gap: 16px;
-  align-items: center;
-  flex-wrap: wrap;
+  gap: 20px;
   justify-content: center;
   font-size: 0.95rem;
-}
-.turn-pill {
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--panel);
-  border: 1px solid #3a3d46;
   font-weight: 600;
 }
-.turn-pill.white, .turn-pill.red { color: #f0e6c8; }
-.turn-pill.black { color: #cfd3da; }
-.banner {
+.chess-label { color: #bcd4ff; }
+.checkers-label { color: #ffb08a; }
+
+.winner-banner {
   font-weight: 700;
-  padding: 4px 12px;
+  font-size: 1.1rem;
+  padding: 6px 16px;
   border-radius: 8px;
 }
-.banner.check { background: var(--check); }
-.banner.over { background: #2f5233; }
+.winner-banner.chess { background: #16325e; color: #bcd4ff; }
+.winner-banner.checkers { background: #6e2410; color: #ffd9c2; }
+.winner-banner.draw { background: #3a3d46; color: #eee; }
 
 .board-wrap {
   width: min(92vw, 560px);
@@ -106,193 +107,11 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: min(7vw, 40px);
   min-width: 40px;
   min-height: 40px;
 }
 .sq.light { background: var(--light-sq); }
 .sq.dark { background: var(--dark-sq); }
-.sq.selected { outline: 3px solid var(--sel); outline-offset: -3px; z-index: 2; }
-.sq.check-sq { outline: 3px solid var(--capture-ring); outline-offset: -3px; }
-
-.dot {
-  position: absolute;
-  width: 28%;
-  height: 28%;
-  border-radius: 50%;
-  background: var(--move-dot);
-  pointer-events: none;
-}
-.dot.capture {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: transparent;
-  box-shadow: inset 0 0 0 5px var(--capture-ring);
-}
-
-.piece {
-  width: 74%;
-  height: 74%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-}
-.piece svg { width: 100%; height: 100%; display: block; }
-
-.trays {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-  justify-content: center;
-  font-size: 0.9rem;
-  color: var(--muted);
-  max-width: 92vw;
-}
-.tray b { color: var(--text); }
-.tray .pieces { letter-spacing: 2px; }
-
-.promo-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.55);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
-}
-.promo-box {
-  background: var(--panel);
-  border-radius: 12px;
-  padding: 16px;
-  display: flex;
-  gap: 10px;
-}
-.promo-box button { font-size: 1.6rem; padding: 10px 14px; }
-
-.hidden { display: none !important; }
-
-footer.hint {
-  color: var(--muted);
-  font-size: 0.8rem;
-  text-align: center;
-  max-width: 92vw;
-}
-
-/* ART-01: custom SVG chess piece icons (chessPieceIcons.js), colored and
-   outlined via CSS so White/Black stay readable on either square shade. */
-.piece.white svg { fill: #fbf7ec; stroke: #14151a; stroke-width: 1.4; stroke-linejoin: round; }
-.piece.black svg { fill: #14151a; stroke: #fbf7ec; stroke-width: 1.4; stroke-linejoin: round; }
-
-/* ART-01: custom SVG checkers piece icons (checkersPieceIcons.js) — a rim,
-   a lighter face, a highlight, and a gold crown mark for kings. */
-.checker {
-  width: 72%;
-  height: 72%;
-  pointer-events: none;
-  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.45));
-}
-.checker svg { width: 100%; height: 100%; display: block; }
-.checker.red .disc-outer { fill: #9c2c22; }
-.checker.red .disc-inner { fill: #e2665a; }
-.checker.black .disc-outer { fill: #17171a; }
-.checker.black .disc-inner { fill: #5a5a5a; }
-.checker .disc-shine { fill: rgba(255, 255, 255, 0.28); }
-.checker .disc-crown { fill: #f4d35e; stroke: #8a6d1a; stroke-width: 0.6; }
-
-.mini-piece {
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-  vertical-align: middle;
-}
-.mini-piece svg { width: 100%; height: 100%; display: block; }
-
-.players-row {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-.player-edit {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--panel);
-  border: 1px solid #3a3d46;
-  border-radius: 999px;
-  padding: 4px 10px 4px 6px;
-}
-.player-edit input {
-  background: transparent;
-  border: none;
-  color: var(--text);
-  font-size: 0.9rem;
-  font-weight: 600;
-  width: 9ch;
-  min-width: 0;
-}
-.player-edit input:focus { outline: none; }
-.players-row .vs { color: var(--muted); font-size: 0.85rem; }
-.swatch {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  flex: none;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
-}
-.swatch.white { background: #fbf7ec; }
-.swatch.black { background: #14151a; border: 1px solid #4a4d57; }
-.swatch.red { background: #c8483c; }
-
-.promo-piece {
-  width: 48px;
-  height: 48px;
-  padding: 6px;
-}
-.promo-piece svg { width: 100%; height: 100%; display: block; }
-.promo-piece.white svg { fill: #fbf7ec; stroke: #14151a; stroke-width: 1.4; stroke-linejoin: round; }
-.promo-piece.black svg { fill: #14151a; stroke: #fbf7ec; stroke-width: 1.4; stroke-linejoin: round; }
-
-.history-table {
-  border-collapse: collapse;
-  width: min(92vw, 620px);
-  font-size: 0.9rem;
-}
-.history-table th, .history-table td {
-  border: 1px solid #3a3d46;
-  padding: 6px 10px;
-  text-align: center;
-}
-.history-table th { background: var(--panel); }
-.history-table td:first-child, .history-table th:first-child { text-align: left; }
-
-.history-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  width: min(92vw, 620px);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.history-list li {
-  background: var(--panel);
-  border: 1px solid #3a3d46;
-  border-radius: 8px;
-  padding: 6px 12px;
-  font-size: 0.88rem;
-}
-
-h2 { font-size: 1.05rem; margin: 10px 0 4px; }
-
-/* Autochess: faction-colored unit icons (reusing the existing chess and
-   checkers piece-icon modules), HP bars, obstacle tiles, and a battle log. */
-.chess-label { color: #bcd4ff; }
-.checkers-label { color: #ffb08a; }
-
 .sq.obstacle {
   background-image: repeating-linear-gradient(
     45deg, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35) 4px, transparent 4px, transparent 9px
@@ -312,11 +131,21 @@ h2 { font-size: 1.05rem; margin: 10px 0 4px; }
 .unit-wrap.dead { display: none; }
 .unit-icon { width: 100%; height: 66%; }
 .unit-icon svg { width: 100%; height: 100%; display: block; }
+
+/* Chess characters (chessCharacterIcons.js): a cool, individualist blue. */
 .unit-icon.chess-faction svg { fill: #bcd4ff; stroke: #16325e; stroke-width: 1.4; stroke-linejoin: round; }
-.unit-icon.checkers-faction svg .disc-outer { fill: #8a2e12; }
-.unit-icon.checkers-faction svg .disc-inner { fill: #e2703c; }
-.unit-icon.checkers-faction svg .disc-shine { fill: rgba(255, 255, 255, 0.3); }
+
+/* Checkers characters (checkersCharacterIcons.js): a warm hive orange —
+   the round disc-based body uses the shared disc-* class names, same as
+   the main Checkers game's piece art. A promoted Draughts Champion breaks
+   from the round body into an angular, winged attacker silhouette and
+   gets a brighter gold accent to read as transformed. */
+.unit-icon.checkers-faction svg { fill: #e2703c; stroke: #6e2410; stroke-width: 1.3; stroke-linejoin: round; }
+.unit-icon.checkers-faction svg .disc-outer { fill: #8a2e12; stroke: none; }
+.unit-icon.checkers-faction svg .disc-inner { fill: #e2703c; stroke: none; }
+.unit-icon.checkers-faction svg .disc-shine { fill: rgba(255, 255, 255, 0.3); stroke: none; }
 .unit-icon.checkers-faction svg .disc-crown { fill: #f4d35e; stroke: #8a6d1a; stroke-width: 0.6; }
+.unit-wrap.champion .unit-icon.checkers-faction svg { fill: #ffcf6e; stroke: #8a4a10; }
 
 .hp-bar-track {
   width: 88%;
@@ -338,24 +167,6 @@ h2 { font-size: 1.05rem; margin: 10px 0 4px; }
   color: #f4d35e;
   text-shadow: 0 0 2px #000;
 }
-
-.faction-counts {
-  display: flex;
-  gap: 20px;
-  justify-content: center;
-  font-size: 0.95rem;
-  font-weight: 600;
-}
-
-.winner-banner {
-  font-weight: 700;
-  font-size: 1.1rem;
-  padding: 6px 16px;
-  border-radius: 8px;
-}
-.winner-banner.chess { background: #16325e; color: #bcd4ff; }
-.winner-banner.checkers { background: #6e2410; color: #ffd9c2; }
-.winner-banner.draw { background: #3a3d46; color: #eee; }
 
 .log-panel {
   width: min(92vw, 620px);

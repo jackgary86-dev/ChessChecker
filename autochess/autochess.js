@@ -1,10 +1,6 @@
 import { createInitialState, stepBattle, runBattle, BOARD_SIZE } from './autochessRules.js';
-import { pieceIconSvg } from './chessPieceIcons.js';
-import { checkerIconSvg } from './checkersPieceIcons.js';
-
-const CHESS_ICON = {
-  footsoldier: 'p', lancer: 'n', cleric: 'b', bulwark: 'r', warqueen: 'q', highking: 'k',
-};
+import { chessCharacterIcon } from './chessCharacterIcons.js';
+import { checkersCharacterIcon } from './checkersCharacterIcons.js';
 
 const boardEl = document.getElementById('board');
 const logPanel = document.getElementById('logPanel');
@@ -19,12 +15,6 @@ const speedSelect = document.getElementById('speedSelect');
 let state = createInitialState();
 let timer = null;
 let running = false;
-
-function unitIconHtml(unit) {
-  return unit.faction === 'chess'
-    ? pieceIconSvg(CHESS_ICON[unit.type])
-    : checkerIconSvg(unit.type === 'draughtslord');
-}
 
 function render() {
   boardEl.innerHTML = '';
@@ -43,13 +33,17 @@ function render() {
 
       const unit = unitAt.get(key);
       if (unit) {
+        const isChampion = unit.type === 'draughtsman' && unit.veteran;
         const wrap = document.createElement('div');
-        wrap.className = 'unit-wrap' + (unit.veteran ? ' veteran' : '');
-        wrap.title = `${unit.name} #${unit.id} — HP ${unit.hp}/${unit.maxHp}, ATK ${unit.atk}`;
+        wrap.className = 'unit-wrap' + (unit.veteran ? ' veteran' : '') + (isChampion ? ' champion' : '');
+        const rangeLabel = unit.range > 1 ? `ranged (${unit.range})` : 'melee';
+        wrap.title = `${unit.name} #${unit.id} — HP ${unit.hp}/${unit.maxHp}, ATK ${unit.atk}, ${rangeLabel}`;
 
         const icon = document.createElement('div');
         icon.className = 'unit-icon ' + (unit.faction === 'chess' ? 'chess-faction' : 'checkers-faction');
-        icon.innerHTML = unitIconHtml(unit);
+        icon.innerHTML = unit.faction === 'chess'
+          ? chessCharacterIcon(unit.type)
+          : checkersCharacterIcon(unit.type, isChampion);
         wrap.appendChild(icon);
 
         const track = document.createElement('div');

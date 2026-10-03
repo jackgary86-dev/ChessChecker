@@ -39,8 +39,12 @@ cp "$HERE/checkers/index.html" "$HERE/checkers/checkers.js" "$HERE/checkers/chec
    "$HERE/checkers/history.html" "$HERE/checkers/history.js" \
    "$ALERT/public/checkers/"
 cp "$HERE/autochess/index.html" "$HERE/autochess/autochess.js" "$HERE/autochess/autochessRules.js" \
-   "$HERE/autochess/chessPieceIcons.js" "$HERE/autochess/checkersPieceIcons.js" "$HERE/autochess/style.css" \
+   "$HERE/autochess/chessCharacterIcons.js" "$HERE/autochess/checkersCharacterIcons.js" "$HERE/autochess/style.css" \
    "$ALERT/public/autochess/"
+# Stale from before the character-art rework (autochess used to reuse the
+# chess/checkers games' plain piece icons); remove so a synced checkout
+# doesn't carry dead files alongside the new character-icon modules.
+rm -f "$ALERT/public/autochess/chessPieceIcons.js" "$ALERT/public/autochess/checkersPieceIcons.js"
 
 # Test files import the pure modules by relative path, which differs one
 # level deeper here (test/ sits next to public/, not next to the repo root
