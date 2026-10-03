@@ -40,6 +40,8 @@ cp "$HERE/checkers/index.html" "$HERE/checkers/checkers.js" "$HERE/checkers/chec
    "$ALERT/public/checkers/"
 cp "$HERE/autochess/index.html" "$HERE/autochess/autochess.js" "$HERE/autochess/autochessRules.js" \
    "$HERE/autochess/chessCharacterIcons.js" "$HERE/autochess/checkersCharacterIcons.js" "$HERE/autochess/style.css" \
+   "$HERE/autochess/playerNames.js" "$HERE/autochess/historyLogic.js" "$HERE/autochess/historyStore.js" \
+   "$HERE/autochess/history.html" "$HERE/autochess/history.js" \
    "$ALERT/public/autochess/"
 # Stale from before the character-art rework (autochess used to reuse the
 # chess/checkers games' plain piece icons); remove so a synced checkout

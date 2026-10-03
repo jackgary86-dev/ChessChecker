@@ -74,6 +74,75 @@ footer.hint, p.hint {
 .chess-label { color: #bcd4ff; }
 .checkers-label { color: #ffb08a; }
 
+.players-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.player-edit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--panel);
+  border: 1px solid #3a3d46;
+  border-radius: 999px;
+  padding: 4px 10px 4px 6px;
+}
+.player-edit input {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 600;
+  width: 9ch;
+  min-width: 0;
+}
+.player-edit input:focus { outline: none; }
+.players-row .vs { color: var(--muted); font-size: 0.85rem; }
+.swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex: none;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+.swatch.chess-swatch { background: #bcd4ff; }
+.swatch.checkers-swatch { background: #e2703c; }
+
+.history-table {
+  border-collapse: collapse;
+  width: min(92vw, 620px);
+  font-size: 0.9rem;
+}
+.history-table th, .history-table td {
+  border: 1px solid #3a3d46;
+  padding: 6px 10px;
+  text-align: center;
+}
+.history-table th { background: var(--panel); }
+.history-table td:first-child, .history-table th:first-child { text-align: left; }
+
+.history-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: min(92vw, 620px);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.history-list li {
+  background: var(--panel);
+  border: 1px solid #3a3d46;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.88rem;
+}
+
+h2 { font-size: 1.05rem; margin: 10px 0 4px; }
+
 .winner-banner {
   font-weight: 700;
   font-size: 1.1rem;

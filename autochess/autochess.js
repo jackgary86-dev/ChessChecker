@@ -3,6 +3,9 @@ import {
 } from './autochessRules.js';
 import { chessCharacterIcon } from './chessCharacterIcons.js';
 import { checkersCharacterIcon } from './checkersCharacterIcons.js';
+import { loadPlayerNames, savePlayerNames } from './playerNames.js';
+import { loadHistory, saveHistory } from './historyStore.js';
+import { appendResult } from './historyLogic.js';
 
 const boardEl = document.getElementById('board');
 const logPanel = document.getElementById('logPanel');
@@ -14,11 +17,41 @@ const instantBtn = document.getElementById('instantBtn');
 const newBattleBtn = document.getElementById('newBattleBtn');
 const speedSelect = document.getElementById('speedSelect');
 const draftHint = document.getElementById('draftHint');
+const p1NameInput = document.getElementById('p1NameInput');
+const p2NameInput = document.getElementById('p2NameInput');
+
+// NAMES-01/02: shared across all three games. p1 roots for Chess, p2 for
+// Checkers — Chess is the faction that acts first (tick 0), matching the
+// "p1 moves first" convention Chess/Checkers already use for White/Red.
+let playerNames = loadPlayerNames();
 
 let state = createInitialState();
 let timer = null;
 let running = false;
 let selectedUnitId = null;
+let resultRecorded = false; // guards against logging the same finished battle twice
+
+function recordBattleResult(finishedState) {
+  const entry = {
+    date: new Date().toISOString(),
+    game: 'autochess',
+    players: { p1: playerNames.p1, p2: playerNames.p2 },
+    result: finishedState.winner === 'chess' ? 'p1' : finishedState.winner === 'checkers' ? 'p2' : 'draw',
+  };
+  saveHistory(appendResult(loadHistory(), entry));
+}
+
+function refreshNameDisplay() {
+  if (p1NameInput.value !== playerNames.p1) p1NameInput.value = playerNames.p1;
+  if (p2NameInput.value !== playerNames.p2) p2NameInput.value = playerNames.p2;
+}
+
+function onNameChange() {
+  playerNames = { p1: p1NameInput.value, p2: p2NameInput.value };
+  savePlayerNames(playerNames);
+  playerNames = loadPlayerNames(); // re-normalized (trimmed, defaulted if blank)
+  refreshNameDisplay();
+}
 
 function render() {
   boardEl.innerHTML = '';
@@ -91,6 +124,10 @@ function render() {
     stopLoop();
     fightBtn.disabled = true;
     instantBtn.disabled = true;
+    if (!resultRecorded) {
+      recordBattleResult(state);
+      resultRecorded = true;
+    }
   } else {
     winnerBanner.classList.add('hidden');
     fightBtn.disabled = false;
@@ -163,6 +200,7 @@ newBattleBtn.addEventListener('click', () => {
   stopLoop();
   state = createInitialState();
   selectedUnitId = null;
+  resultRecorded = false;
   fightBtn.disabled = false;
   instantBtn.disabled = false;
   render();
@@ -175,4 +213,8 @@ speedSelect.addEventListener('change', () => {
   }
 });
 
+p1NameInput.addEventListener('change', onNameChange);
+p2NameInput.addEventListener('change', onNameChange);
+
+refreshNameDisplay();
 render();

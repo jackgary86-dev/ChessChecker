@@ -22,10 +22,11 @@ This game is also submitted to the Game Portal at `http://192.168.1.36:2016`
 ## How to play
 
 Each player has a name (defaults to **Connor** and **Jack**) shown next to
-their color — click either name to edit it; edits are remembered across
-reloads and both games. A **History** link on each game and the menu shows
-every player's win/loss/draw record, per game and combined, plus a
-recent-games list.
+their color (or, in Autochess, next to the faction they're rooting for) —
+click either name to edit it; edits are remembered across reloads and all
+three modes. A **History** link on each game and the menu shows every
+player's win/loss/draw record, per game and combined, plus a recent-games
+list.
 
 **Chess** — click a piece to see its legal moves highlighted, click a
 highlighted square to move it. Castling, en passant and pawn promotion
@@ -62,7 +63,10 @@ the result, locking in the draft first if it hasn't been already), or
 **New battle** for a fresh random layout and a new draft. Units are drawn as
 their own small characters (`chessCharacterIcons.js`,
 `checkersCharacterIcons.js`), not the plain board-piece icons the Chess and
-Checkers games use.
+Checkers games use. p1 roots for Chess, p2 for Checkers (Chess is the
+faction that always acts first, same "p1 moves first" convention as
+White/Red), and the result writes to the same match-history system as the
+other two games.
 
 The two sides play differently on purpose:
 
@@ -132,10 +136,11 @@ on the LAN, or `http://localhost:<port>/` on the same machine.
 
 ## Project layout
 
-Each game folder is self-contained (own copy of `style.css`, `playerNames.js`,
-`historyStore.js`, `historyLogic.js`, `history.html`/`history.js`) so it can
-be served standalone on its own port; the root copies are the source these
-are kept in sync from.
+Each game folder — Chess, Checkers, and Autochess alike — is self-contained
+(own copy of `style.css`, `playerNames.js`, `historyStore.js`,
+`historyLogic.js`, `history.html`/`history.js`) so it can be served
+standalone on its own port; the root copies are the source these are kept
+in sync from.
 
 ```
 chess/
@@ -167,7 +172,10 @@ autochess/
   chessCharacterIcons.js,
   checkersCharacterIcons.js own character art, not reused from the games
   autochess.js               UI: board/HP-bar rendering, Fight/Pause/Instant/
-                              New battle, battle log
+                              New battle, battle log, player names, and
+                              match-history recording (AUTOCHESS-09)
+  playerNames.js, historyLogic.js, historyStore.js, history.html/.js
+                              this game's own copies, same as chess/checkers
   style.css
 playerNames.js       pure name normalization (NAMES-02) + localStorage IO
 historyLogic.js      pure match-history logic (HISTORY-01): append/summarize/
@@ -191,7 +199,7 @@ test/
 ## Testing
 
 ```bash
-npm test           # node --test: pure-logic unit tests (59 tests)
+npm test           # node --test: pure-logic unit tests (60 tests)
 npm run test:smoke # Playwright smoke test (needs `npm install` first)
 ```
 
@@ -204,12 +212,15 @@ surrounded enemy over a merely-nearer open one, group movement's ally-
 distance tie-break, forward-only blocking a backward step, the Draughts
 Champion's promotion, the drafting phase's swap/footprint/locking rules,
 and seeded combat variance's ±15% bound, cross-seed variation, and
-same-seed reproducibility). The Playwright test serves the repo over plain
+same-seed reproducibility) — plus a check that a third `game: 'autochess'`
+match-history entry composes into its own stats bucket without disturbing
+Chess's or Checkers'. The Playwright test serves the repo over plain
 HTTP (ES module
 `<script>` tags are blocked by CORS when opened via `file://`), opens each
 board, plays one legal move (for Autochess: swaps two units in the draft
-phase, then resolves the battle instantly), and checks the squares stay at
-least 40px even at a 390px-wide viewport.
+phase, then resolves the battle instantly), checks the squares stay at
+least 40px even at a 390px-wide viewport, and (for Autochess) confirms the
+finished battle shows up on its history page.
 
 ## What's basic vs. what's next
 
@@ -217,8 +228,8 @@ Standard rules for both games, hot-seat only, no computer opponent, no
 network multiplayer, no draw-by-repetition or 50-move rule. Editable player
 names, a persistent win/loss/draw history, and custom piece art for Chess
 and Checkers (tickets #21-#25) are all in, plus the Autochess mode, its own
-character art, faction mechanics, a balance pass, a drafting phase, and
-seeded combat randomness (tickets #26-#31, #35-#41, #32, #33). Autochess
-doesn't yet write to the match-history page — tracked as the open backlog,
-#34. `TICKETS.md` and the repo's GitHub issues track further work; new
-features and game modes build on top of this.
+character art, faction mechanics, a balance pass, a drafting phase, seeded
+combat randomness, and match-history integration (tickets #26-#31, #35-#41,
+#32, #33, #34) — every planned Autochess ticket is now shipped. `TICKETS.md`
+and the repo's GitHub issues track further work; new features and game
+modes build on top of this.

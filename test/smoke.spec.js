@@ -93,6 +93,12 @@ for (const width of [1280, 390]) {
     await expect(page.locator('#fightBtn')).toBeDisabled();
 
     await page.screenshot({ path: path.join(here, 'screenshots', `autochess-${width}.png`) });
+
+    // AUTOCHESS-09: the finished battle should have been recorded into the
+    // same match-history store Chess and Checkers already write to.
+    await page.goto(BASE + '/autochess/history.html');
+    await expect(page.locator('.history-list li').first()).toContainText('Autochess:');
+
     await context.close();
     await browser.close();
   });

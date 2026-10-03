@@ -56,3 +56,20 @@ test('describeResult formats a win and a draw', () => {
   assert.equal(describeResult(win), 'Connor beat Jack');
   assert.equal(describeResult(draw), 'Connor and Jack drew');
 });
+
+// AUTOCHESS-09: a third game type ('autochess') composes with the existing
+// two without any changes to this module — summarize/recentGames/
+// describeResult were already generic over `game`, so this just proves it.
+test('summarize keeps autochess results in their own byGame bucket, alongside chess and checkers', () => {
+  const history = [
+    { date: '2026-01-01', game: 'chess', players: { p1: 'Connor', p2: 'Jack' }, result: 'p1' },
+    { date: '2026-01-02', game: 'checkers', players: { p1: 'Connor', p2: 'Jack' }, result: 'p2' },
+    { date: '2026-01-03', game: 'autochess', players: { p1: 'Connor', p2: 'Jack' }, result: 'p1' },
+  ];
+  const stats = summarize(history);
+  assert.equal(stats.Connor.wins, 2);
+  assert.equal(stats.Connor.losses, 1);
+  assert.equal(stats.Connor.byGame.autochess.wins, 1);
+  assert.equal(stats.Jack.byGame.autochess.losses, 1);
+  assert.equal(stats.Connor.byGame.chess.wins, 1, 'autochess must not bleed into the chess bucket');
+});

@@ -7,8 +7,8 @@ and game modes come later.
 
 All 20 tickets below (#1-#20 in the repo's GitHub issues) are done, shipped
 in commit `cf56219`. The **Next phase** section (#21-#25) and the
-**Autochess** sections (#26-#31, #35-#41, #32, #33, plus #34 backlog) track
-everything after the basic build.
+**Autochess** sections (#26-#31, #35-#41, #32, #33, #34) track everything
+after the basic build.
 
 ## Chess
 1. **CHESS-01** — Board model: 8x8 state, standard starting position, FEN-free
@@ -222,10 +222,31 @@ Filed as GitHub issue #33. Done.
     AUTOCHESS-06 balance-regression test (both factions 35%-65% over 300
     battles) still passes with variance on by default.
 
-### Autochess next phase (not built — backlog)
+## Autochess: match-history integration
 
-Filed as GitHub issue #34. Planning only.
+Filed as GitHub issue #34. Done.
 
-34. **AUTOCHESS-09** — Record autochess results into the existing
-    win/loss/draw match-history system (currently only Chess and Checkers
-    write to it).
+34. **AUTOCHESS-09** — Autochess results now write to the same
+    win/loss/draw match-history system Chess and Checkers already use.
+    p1 roots for Chess, p2 for Checkers (Chess is the faction that acts
+    first each battle, matching the "p1 moves first" convention White/Red
+    already use); a new players-row on the Autochess page shows and edits
+    both names, shared with the other two games via `playerNames.js`. Like
+    Chess and Checkers, the Autochess folder now carries its own copies of
+    `playerNames.js`, `historyLogic.js`, `historyStore.js`, `history.html`
+    and `history.js` for standalone-port self-containment, plus a new
+    **History** link in its topbar. `historyLogic.js` needed no changes at
+    all — `summarize`/`recentGames`/`describeResult` were already generic
+    over the `game` field, so a third game type just composed; `history.js`
+    (all four copies: root, chess/, checkers/, autochess/) gained an
+    Autochess column and a proper 3-way game-name label (previously any
+    non-chess `game` value rendered as "Checkers", a latent bug this fixed).
+    A `resultRecorded` guard (matching Chess/Checkers' own pattern) stops a
+    battle from double-logging. 1 new unit test confirms autochess results
+    compose into their own `byGame` bucket without affecting chess/checkers
+    totals; the Playwright smoke test now resolves a battle, navigates to
+    the Autochess history page, and confirms the result actually landed
+    there.
+
+This closes the Autochess backlog opened after AUTOCHESS-16 — #32, #33 and
+#34 are all shipped.
