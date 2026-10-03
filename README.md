@@ -47,15 +47,20 @@ coming back resumes the game in progress. "New game" resets the board (not
 the match history). Pieces are drawn as custom inline SVG icons, not font
 glyphs — no external images, fonts, or CDNs.
 
-**Autochess** — no input during the fight: Chess lines up in its classic
-opening rows (rook, knight, bishop, queen, king, bishop, knight, rook, then
-eight pawns — reskinned as Footsoldier/Lancer/Cleric/Bulwark/Warqueen/High
-King), Checkers lines up in its classic starting rows (reskinned as
-Draughtsman, with two pre-kinged Draughts Lords), and four random tiles in
-the middle rows are blocked each battle. Press **Fight!** to watch it
-resolve automatically, tick by tick (**Resolve instantly** skips straight
-to the result), or **New battle** for a fresh random layout. Units are
-drawn as their own small characters (`chessCharacterIcons.js`,
+**Autochess** — Chess lines up in its classic opening rows (rook, knight,
+bishop, queen, king, bishop, knight, rook, then eight pawns — reskinned as
+Footsoldier/Lancer/Cleric/Bulwark/Warqueen/High King), Checkers lines up in
+its classic starting rows (reskinned as Draughtsman, with two pre-kinged
+Draughts Lords), and four random tiles in the middle rows are blocked each
+battle. Before the fight, a **drafting phase** lets you rearrange either
+army within its own starting rows: click one of your units, then click
+another of your own to swap their positions (the dashed gold outline shows
+every tile you can drop on). Press **Start Battle!** when you're happy with
+the arrangement — no input during the fight itself. **Fight!** watches it
+resolve automatically, tick by tick (**Resolve instantly** skips straight to
+the result, locking in the draft first if it hasn't been already), or
+**New battle** for a fresh random layout and a new draft. Units are drawn as
+their own small characters (`chessCharacterIcons.js`,
 `checkersCharacterIcons.js`), not the plain board-piece icons the Chess and
 Checkers games use.
 
@@ -178,7 +183,7 @@ test/
 ## Testing
 
 ```bash
-npm test           # node --test: pure-logic unit tests (45 tests)
+npm test           # node --test: pure-logic unit tests (53 tests)
 npm run test:smoke # Playwright smoke test (needs `npm install` first)
 ```
 
@@ -188,22 +193,23 @@ localStorage dependency, so the unit tests import and exercise them
 directly — including each Autochess mechanic in isolation (the hive
 counter firing at exactly 3 linked and not at 2, cornering preferring a
 surrounded enemy over a merely-nearer open one, group movement's ally-
-distance tie-break, forward-only blocking a backward step, and the
-Draughts Champion's promotion). The Playwright test serves the repo over
-plain HTTP (ES module `<script>` tags are blocked by CORS when opened via
-`file://`), opens each board, plays one legal move (or resolves an
-Autochess battle instantly), and checks the squares stay at least 40px even
-at a 390px-wide viewport.
+distance tie-break, forward-only blocking a backward step, the Draughts
+Champion's promotion, and the drafting phase's swap/footprint/locking
+rules). The Playwright test serves the repo over plain HTTP (ES module
+`<script>` tags are blocked by CORS when opened via `file://`), opens each
+board, plays one legal move (for Autochess: swaps two units in the draft
+phase, then resolves the battle instantly), and checks the squares stay at
+least 40px even at a 390px-wide viewport.
 
 ## What's basic vs. what's next
 
 Standard rules for both games, hot-seat only, no computer opponent, no
 network multiplayer, no draw-by-repetition or 50-move rule. Editable player
 names, a persistent win/loss/draw history, and custom piece art for Chess
-and Checkers (tickets #21-#25) are all in, plus the Autochess mode and its
-own character art, faction mechanics, and balance pass (tickets #26-#31,
-#35-#41). Autochess still has no drafting/placement phase, no combat
-randomness (only the obstacle layout is randomized), and doesn't yet write
-to the match-history page — tracked as the open backlog, #32-#34.
-`TICKETS.md` and the repo's GitHub issues track further work; new features
-and game modes build on top of this.
+and Checkers (tickets #21-#25) are all in, plus the Autochess mode, its own
+character art, faction mechanics, a balance pass, and a drafting phase
+(tickets #26-#31, #35-#41, #32). Autochess still has no combat randomness
+(only the obstacle layout is randomized) and doesn't yet write to the
+match-history page — tracked as the open backlog, #33-#34. `TICKETS.md` and
+the repo's GitHub issues track further work; new features and game modes
+build on top of this.

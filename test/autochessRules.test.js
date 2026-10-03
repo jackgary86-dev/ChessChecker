@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createInitialState, stepBattle, runBattle, livingUnits, BOARD_SIZE, UNIT_DEFS,
+  moveDraftUnit, startBattle,
 } from '../autochess/autochessRules.js';
 
 test('createInitialState is deterministic for a given seed', () => {
@@ -281,4 +282,72 @@ test('neither faction dominates: both win between 35% and 65% of simulated battl
   const checkersRate = results.checkers / trials;
   assert.ok(chessRate >= 0.35 && chessRate <= 0.65, `chess win rate ${chessRate} out of band`);
   assert.ok(checkersRate >= 0.35 && checkersRate <= 0.65, `checkers win rate ${checkersRate} out of band`);
+});
+
+// AUTOCHESS-07: drafting/placement phase.
+
+test('a fresh battle starts in the draft phase, fully formed in classic formation', () => {
+  const state = createInitialState(1);
+  assert.equal(state.phase, 'draft');
+  assert.equal(livingUnits(state, 'chess').length, 16);
+  assert.equal(livingUnits(state, 'checkers').length, 12);
+});
+
+test('moveDraftUnit swaps two friendly units within their own faction footprint', () => {
+  const state = createInitialState(1);
+  const a = state.units.find((u) => u.row === 0 && u.col === 0); // bulwark
+  const b = state.units.find((u) => u.row === 0 && u.col === 4); // high king
+  const next = moveDraftUnit(state, a.id, b.row, b.col);
+  const movedA = next.units.find((u) => u.id === a.id);
+  const movedB = next.units.find((u) => u.id === b.id);
+  assert.deepEqual({ row: movedA.row, col: movedA.col }, { row: 0, col: 4 });
+  assert.deepEqual({ row: movedB.row, col: movedB.col }, { row: 0, col: 0 });
+  // Nothing else about either unit changes, just position.
+  assert.equal(movedA.type, a.type);
+  assert.equal(movedB.type, b.type);
+});
+
+test('moveDraftUnit refuses to move a unit outside its own faction footprint', () => {
+  const state = createInitialState(1);
+  const chessUnit = state.units.find((u) => u.faction === 'chess');
+  const next = moveDraftUnit(state, chessUnit.id, 5, 1); // a Checkers tile
+  assert.deepEqual(next, state, 'an out-of-footprint destination must be a no-op');
+});
+
+test('moveDraftUnit refuses to swap with an enemy unit', () => {
+  const state = createInitialState(1);
+  const chessUnit = state.units.find((u) => u.row === 0 && u.col === 0);
+  const checkersUnit = state.units.find((u) => u.faction === 'checkers');
+  const next = moveDraftUnit(state, chessUnit.id, checkersUnit.row, checkersUnit.col);
+  assert.deepEqual(next, state, 'moving onto an enemy-occupied tile must be a no-op');
+});
+
+test('moveDraftUnit is a no-op once the battle has started', () => {
+  let state = createInitialState(1);
+  state = startBattle(state);
+  const a = state.units.find((u) => u.row === 0 && u.col === 0);
+  const b = state.units.find((u) => u.row === 0 && u.col === 4);
+  const next = moveDraftUnit(state, a.id, b.row, b.col);
+  assert.deepEqual(next, state, 'draft moves must be rejected once phase is battle');
+});
+
+test('startBattle locks in the draft phase and changes nothing else', () => {
+  const state = createInitialState(1);
+  const next = startBattle(state);
+  assert.equal(next.phase, 'battle');
+  assert.deepEqual(next.units, state.units);
+  assert.deepEqual(next.obstacles, state.obstacles);
+});
+
+test('stepBattle forces phase to battle on its very first call, even if the draft was never touched', () => {
+  const state = createInitialState(1);
+  assert.equal(state.phase, 'draft');
+  const next = stepBattle(state);
+  assert.equal(next.phase, 'battle');
+});
+
+test('a battle run straight from createInitialState (skipping the draft API entirely) behaves exactly as before', () => {
+  const r1 = runBattle(createInitialState('draft-compat-1'));
+  assert.ok(['chess', 'checkers', 'draw'].includes(r1.winner));
+  assert.equal(r1.phase, 'battle');
 });

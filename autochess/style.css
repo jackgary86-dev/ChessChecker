@@ -118,6 +118,16 @@ footer.hint, p.hint {
   );
 }
 
+.board.draft-mode .sq { cursor: pointer; }
+.sq.draft-droppable::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 2px dashed rgba(244, 211, 94, 0.85);
+  border-radius: 4px;
+  pointer-events: none;
+}
+
 .unit-wrap {
   position: relative;
   width: 86%;
@@ -167,6 +177,11 @@ footer.hint, p.hint {
   color: #f4d35e;
   text-shadow: 0 0 2px #000;
 }
+
+.unit-wrap.draft-selected { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 4px; }
+
+.draft-hint { color: #f4d35e; }
+.draft-hint strong { color: var(--text); }
 
 .log-panel {
   width: min(92vw, 620px);

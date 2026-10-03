@@ -31,6 +31,14 @@
 //   Champion: free movement, ranged, and a bonus strike — the hive's
 //   purely defensive melee unit becomes a lone offensive threat, the way
 //   a checkers man becomes a king.
+// - Draft phase: createInitialState places both armies in their classic
+//   formation, same as always, but the returned state starts in
+//   phase:'draft'. Before the fight, moveDraftUnit can swap any two
+//   friendly units within that army's own starting tiles (so the roster
+//   and footprint never change, just who stands where). stepBattle flips
+//   phase to 'battle' on its first call regardless of whether the draft
+//   was touched, so every existing caller that skips straight to
+//   stepBattle/runBattle — tests included — behaves exactly as before.
 
 export const BOARD_SIZE = 8;
 const HIVE_SHIELD_PER_ALLY = 1;
@@ -80,6 +88,34 @@ function chebyshev(a, b) {
   return Math.max(Math.abs(a.row - b.row), Math.abs(a.col - b.col));
 }
 
+// The fixed set of tiles each faction's classic formation occupies — always
+// fully occupied, 16 for Chess and 12 for Checkers. Used both to place the
+// opening formation and, during the draft phase, to validate a rearrangement
+// stays within that faction's own footprint.
+function chessTiles() {
+  const tiles = [];
+  for (let col = 0; col < BOARD_SIZE; col++) tiles.push({ row: 0, col });
+  for (let col = 0; col < BOARD_SIZE; col++) tiles.push({ row: 1, col });
+  return tiles;
+}
+
+function checkersTiles() {
+  const tiles = [];
+  for (let row = 5; row <= 7; row++) {
+    for (let col = 0; col < BOARD_SIZE; col++) {
+      if ((row + col) % 2 !== 1) continue; // dark squares only, standard draughts setup
+      tiles.push({ row, col });
+    }
+  }
+  return tiles;
+}
+
+// Exported so the UI can highlight a selected unit's valid drop tiles
+// without duplicating the tile-set logic.
+export function factionTiles(faction) {
+  return faction === 'chess' ? chessTiles() : checkersTiles();
+}
+
 export function createInitialState(seed) {
   const rng = mulberry32(seedFromInput(seed));
   const units = [];
@@ -107,12 +143,9 @@ export function createInitialState(seed) {
   CHESS_BACK_ROW.forEach((type, col) => units.push(makeUnit(type, 0, col)));
   for (let col = 0; col < BOARD_SIZE; col++) units.push(makeUnit('footsoldier', 1, col));
 
-  for (let row = 5; row <= 7; row++) {
-    for (let col = 0; col < BOARD_SIZE; col++) {
-      if ((row + col) % 2 !== 1) continue; // dark squares only, standard draughts setup
-      const isLord = row === 7 && (col === 2 || col === 4);
-      units.push(makeUnit(isLord ? 'draughtslord' : 'draughtsman', row, col));
-    }
+  for (const { row, col } of checkersTiles()) {
+    const isLord = row === 7 && (col === 2 || col === 4);
+    units.push(makeUnit(isLord ? 'draughtslord' : 'draughtsman', row, col));
   }
 
   // Obstacles only ever land in the neutral middle (rows 2-4), so they can
@@ -131,6 +164,7 @@ export function createInitialState(seed) {
   const chessCount = units.filter((u) => u.faction === 'chess').length;
   const checkersCount = units.length - chessCount;
   return {
+    phase: 'draft',
     tick: 0,
     winner: null,
     log: [`Battle begins: ${chessCount} Chess vs ${checkersCount} Checkers.`],
@@ -141,12 +175,53 @@ export function createInitialState(seed) {
 
 function cloneState(state) {
   return {
+    phase: state.phase,
     tick: state.tick,
     winner: state.winner,
     log: state.log,
     obstacles: state.obstacles.map((o) => ({ ...o })),
     units: state.units.map((u) => ({ ...u })),
   };
+}
+
+// Draft phase: before the fight, either side's units can be rearranged
+// within their own faction's classic footprint (chessTiles()/checkersTiles())
+// — never into the neutral middle or the enemy's rows. Since that footprint
+// is always fully occupied, "moving" a unit onto an ally's tile swaps them;
+// moving onto an unoccupied tile of its own faction (impossible today, but
+// kept general) just relocates it. A no-op (same faction's state back
+// unchanged) covers every invalid request: wrong phase, unknown unit, enemy
+// unit on the destination, or a destination outside that unit's own tiles.
+export function moveDraftUnit(state, unitId, toRow, toCol) {
+  if (state.phase !== 'draft') return state;
+  const unit = state.units.find((u) => u.id === unitId);
+  if (!unit) return state;
+  const onOwnTiles = factionTiles(unit.faction).some((t) => t.row === toRow && t.col === toCol);
+  if (!onOwnTiles) return state;
+  if (unit.row === toRow && unit.col === toCol) return state;
+  const occupant = state.units.find((u) => u.row === toRow && u.col === toCol);
+  if (occupant && occupant.faction !== unit.faction) return state;
+
+  const next = cloneState(state);
+  const movingUnit = next.units.find((u) => u.id === unitId);
+  const occupyingUnit = occupant ? next.units.find((u) => u.id === occupant.id) : null;
+  const fromRow = movingUnit.row;
+  const fromCol = movingUnit.col;
+  movingUnit.row = toRow;
+  movingUnit.col = toCol;
+  if (occupyingUnit) {
+    occupyingUnit.row = fromRow;
+    occupyingUnit.col = fromCol;
+  }
+  return next;
+}
+
+// Locks in the draft and signals the fight starts now. stepBattle already
+// forces phase to 'battle' on its first call, so this just gives the UI an
+// explicit, immediate transition to show before the first tick runs.
+export function startBattle(state) {
+  if (state.phase !== 'draft') return state;
+  return { ...cloneState(state), phase: 'battle' };
 }
 
 function isObstacle(state, row, col) {
@@ -402,6 +477,7 @@ function computeWinner(state) {
 export function stepBattle(state) {
   if (state.winner) return state;
   const next = cloneState(state);
+  next.phase = 'battle';
   const log = [];
   const chessUnits = next.units.filter((u) => u.faction === 'chess');
   const checkersUnits = next.units.filter((u) => u.faction === 'checkers');

@@ -77,6 +77,15 @@ for (const width of [1280, 390]) {
     const box = await page.locator('.sq').first().boundingBox();
     expect(box.width).toBeGreaterThanOrEqual(38);
 
+    // Draft phase: click a unit, then another of its own faction, to swap them.
+    await expect(page.locator('#draftHint')).toBeVisible();
+    const squares = page.locator('.sq');
+    await squares.nth(0).click(); // select the Bulwark at row0,col0
+    await expect(page.locator('.unit-wrap.draft-selected')).toHaveCount(1);
+    await squares.nth(4).click(); // swap with the High King at row0,col4
+    await expect(page.locator('.unit-wrap.draft-selected')).toHaveCount(0);
+    await expect(page.locator('#fightBtn')).toHaveText('Start Battle!');
+
     await page.click('#instantBtn');
     await expect(page.locator('#winnerBanner')).not.toHaveClass(/hidden/);
     const bannerText = await page.locator('#winnerBanner').textContent();

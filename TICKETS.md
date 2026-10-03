@@ -7,8 +7,8 @@ and game modes come later.
 
 All 20 tickets below (#1-#20 in the repo's GitHub issues) are done, shipped
 in commit `cf56219`. The **Next phase** section (#21-#25) and the
-**Autochess** sections (#26-#31, #35-#41, plus #32-#34 backlog) track everything
-after the basic build.
+**Autochess** sections (#26-#31, #35-#41, #32, plus #33-#34 backlog) track
+everything after the basic build.
 
 ## Chess
 1. **CHESS-01** — Board model: 8x8 state, standard starting position, FEN-free
@@ -181,13 +181,31 @@ Filed as GitHub issues #35-#41. All seven are done.
     forward-only blocking, Draughts Lord/Champion exemption from it, and
     Champion promotion's range/doubleHit/name change).
 
+## Autochess: drafting phase
+
+Filed as GitHub issue #32. Done.
+
+32. **AUTOCHESS-07** — A manual drafting/placement phase before the fight.
+    Every battle now starts in `phase: 'draft'` with both armies already in
+    their classic formation (unchanged roster and footprint); before
+    pressing **Start Battle!**, either side can rearrange its own units by
+    clicking one, then clicking another of its own units to swap them —
+    `moveDraftUnit` only allows a destination within that unit's own
+    faction's starting tiles (16 for Chess, 12 for Checkers), so this is
+    pure rearrangement, not a roster/points system, and never touches the
+    separate randomized-obstacle zone. `stepBattle` unconditionally forces
+    `phase` to `'battle'` on its very first call regardless of whether the
+    draft was touched, so every existing caller — including the balance-pass
+    regression test — behaves byte-for-byte as before when the draft API is
+    never used. 8 new unit tests cover the draft API directly (phase
+    defaults, swap, footprint validation, enemy-tile rejection, locking),
+    plus a Playwright check that clicking two units swaps them before the
+    fight starts.
+
 ### Autochess next phase (not built — backlog)
 
-Filed as GitHub issues #32-#34. Planning only.
+Filed as GitHub issues #33-#34. Planning only.
 
-32. **AUTOCHESS-07** — A manual drafting/placement phase before the fight
-    (choosing or arranging units), instead of always using the fixed
-    classic starting formations.
 33. **AUTOCHESS-08** — Controlled randomness in combat (seeded, so still
     reproducible/testable) so refighting the same starting layout doesn't
     always produce the exact same result.
