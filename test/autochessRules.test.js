@@ -145,3 +145,22 @@ test('UNIT_DEFS has stats for every unit type used in the starting roster', () =
     assert.ok(UNIT_DEFS[u.type], `missing UNIT_DEFS for ${u.type}`);
   }
 });
+
+// AUTOCHESS-06 balance regression guard: not a precise target, just a wide
+// band (~300 battles across varied seeds, both factions should win between
+// 35% and 65% of the time) to catch a future stat change that makes one
+// side dominate the way the pre-balance-pass stats did (that split was
+// roughly 42/53, but an earlier draft landed at 66/32 — well outside this
+// band).
+test('neither faction dominates: both win between 35% and 65% of simulated battles', () => {
+  const results = { chess: 0, checkers: 0, draw: 0 };
+  const trials = 300;
+  for (let i = 0; i < trials; i++) {
+    const r = runBattle(createInitialState(`balance-regression-${i}`));
+    results[r.winner]++;
+  }
+  const chessRate = results.chess / trials;
+  const checkersRate = results.checkers / trials;
+  assert.ok(chessRate >= 0.35 && chessRate <= 0.65, `chess win rate ${chessRate} out of band`);
+  assert.ok(checkersRate >= 0.35 && checkersRate <= 0.65, `checkers win rate ${checkersRate} out of band`);
+});

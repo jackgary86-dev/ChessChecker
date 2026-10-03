@@ -7,7 +7,7 @@ and game modes come later.
 
 All 20 tickets below (#1-#20 in the repo's GitHub issues) are done, shipped
 in commit `cf56219`. The **Next phase** section (#21-#25) and the
-**Autochess** section (#26-#30, plus #31-#34 backlog) track everything
+**Autochess** section (#26-#31, plus #32-#34 backlog) track everything
 after the basic build.
 
 ## Chess
@@ -90,7 +90,7 @@ Filed as GitHub issues #21-#25. All five are done.
 ## Autochess
 
 A third mode: Chess vs Checkers, auto-battling. Filed as GitHub issues
-#26-#30. All five are done.
+#26-#31. All six are done.
 
 26. **AUTOCHESS-01** — Pure battle engine (`autochessRules.js`, no DOM):
     unit stat definitions, classic starting formations (Chess's real
@@ -116,16 +116,19 @@ A third mode: Chess vs Checkers, auto-battling. Filed as GitHub issues
     hive shield's exact damage reduction, the Draughts Lord's double hit,
     promotion) and a Playwright smoke test that resolves a battle
     instantly and checks the board at 1280px and 390px.
+31. **AUTOCHESS-06** — Balance pass. Grid-searched several stat tweaks
+    (Draughtsman and Draughts Lord hp/atk, Footsoldier hp/atk, the hive
+    shield's strength) across hundreds of simulated battles per candidate.
+    Dropping Draughtsman hp from 14 to 13 alone brought the split from an
+    initial 42% Chess / 53% Checkers / 5% draw to roughly 47% Chess / 49%
+    Checkers / 4% draw over 3,000 battles — within about a point and a
+    half of even. Added a regression test (`test/autochessRules.test.js`)
+    that keeps both factions' win rate between 35% and 65% going forward.
 
 ### Autochess next phase (not built — backlog)
 
-Filed as GitHub issues #31-#34. Planning only.
+Filed as GitHub issues #32-#34. Planning only.
 
-31. **AUTOCHESS-06** — Balance pass. Across 500 simulated battles the
-    current stats land around 42% Chess / 53% Checkers / 5% draw — close,
-    but Checkers has a real edge. Tune stats and/or the hive-shield
-    strength toward an even split, or make the matchup deliberately
-    asymmetric and say so.
 32. **AUTOCHESS-07** — A manual drafting/placement phase before the fight
     (choosing or arranging units), instead of always using the fixed
     classic starting formations.

@@ -28,7 +28,7 @@ export const UNIT_DEFS = {
   bulwark: { faction: 'chess', hp: 16, atk: 4, range: 1, speed: 1, name: 'Bulwark' },
   warqueen: { faction: 'chess', hp: 16, atk: 8, range: 2, speed: 2, name: 'Warqueen' },
   highking: { faction: 'chess', hp: 14, atk: 5, range: 1, speed: 1, name: 'High King' },
-  draughtsman: { faction: 'checkers', hp: 14, atk: 2, range: 1, speed: 1, name: 'Draughtsman' },
+  draughtsman: { faction: 'checkers', hp: 13, atk: 2, range: 1, speed: 1, name: 'Draughtsman' },
   draughtslord: {
     faction: 'checkers', hp: 20, atk: 4, range: 1, speed: 1, name: 'Draughts Lord', doubleHit: true,
   },

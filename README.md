@@ -64,9 +64,12 @@ they're toughest while clustered together (the "hive mind"). **Chess loses
 instantly if its High King falls**, even with other units still
 standing — Checkers loses only once every unit is down. A Footsoldier or
 Draughtsman that reaches the far row is promoted to a stronger Veteran.
-Across 500 simulated battles this comes out to roughly 42% Chess / 53%
-Checkers / 5% draw — close, with a mild Checkers edge; see `TICKETS.md` for
-balance-tuning as a likely next step.
+AUTOCHESS-06's balance pass (dropping Draughtsman HP from 14 to 13, the
+single cleanest lever found by grid-searching several stat tweaks) brought
+this from an initial 42% Chess / 53% Checkers / 5% draw to roughly 47%
+Chess / 49% Checkers / 4% draw across 3,000 simulated battles — within
+about a point and a half of even. A regression test keeps both factions'
+win rate between 35% and 65% going forward.
 
 ## Run it locally
 
