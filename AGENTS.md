@@ -1,7 +1,8 @@
 # For AI agents
 
-This repo (`jackgary86-dev/ChessChecker`) is the source of truth for Chess
-and Checkers development. Work happens here, on `main`.
+This repo (`jackgary86-dev/ChessChecker`) is the source of truth for Chess,
+Checkers, and Autochess (Chess vs Checkers, auto-battling) development.
+Work happens here, on `main`.
 
 ## Keep the Game Portal submission in sync
 
@@ -9,12 +10,12 @@ This game is also submitted to the Game Portal (`http://192.168.1.36:2016`,
 key `checkers-chess`), which serves it from a **separate** repo and branch:
 `jackgary86-dev/Alert`, branch `claude/checkers-chess`. That branch's
 `public/` folder is a mirror of this repo's `index.html`, `shared.css`,
-`chess/` and `checkers/` — the portal only reads `portal-game.json` and
-`static_dir` from that branch, never from here.
+`chess/`, `checkers/` and `autochess/` — the portal only reads
+`portal-game.json` and `static_dir` from that branch, never from here.
 
-**Whenever a feature ticket lands here** (the NAMES-*, HISTORY-* and
-ART-01 tickets in `TICKETS.md`, or anything after them), also update that
-Alert branch so the Game Portal card doesn't go stale:
+**Whenever a feature ticket lands here** (the NAMES-*, HISTORY-*, ART-01
+and AUTOCHESS-* tickets in `TICKETS.md`, or anything after them), also
+update that Alert branch so the Game Portal card doesn't go stale:
 
 1. Check out `jackgary86-dev/Alert` with `claude/checkers-chess` already
    checked out (clone it if you don't have it: it's a separate repo, not a

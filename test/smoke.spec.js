@@ -65,4 +65,26 @@ for (const width of [1280, 390]) {
     await context.close();
     await browser.close();
   });
+
+  test(`autochess: both armies render and a battle resolves instantly (${width}px)`, async () => {
+    const browser = await chromium.launch({ executablePath: CHROMIUM_PATH });
+    const { context, page } = await openPage(browser, '/autochess/index.html', width);
+
+    await expect(page.locator('#chessCount')).toHaveText('Chess: 16');
+    await expect(page.locator('#checkersCount')).toHaveText('Checkers: 12');
+    await expect(page.locator('.unit-icon')).toHaveCount(28);
+
+    const box = await page.locator('.sq').first().boundingBox();
+    expect(box.width).toBeGreaterThanOrEqual(38);
+
+    await page.click('#instantBtn');
+    await expect(page.locator('#winnerBanner')).not.toHaveClass(/hidden/);
+    const bannerText = await page.locator('#winnerBanner').textContent();
+    expect(['Chess wins the battle!', 'Checkers wins the battle!', 'Draw — both armies fell.']).toContain(bannerText);
+    await expect(page.locator('#fightBtn')).toBeDisabled();
+
+    await page.screenshot({ path: path.join(here, 'screenshots', `autochess-${width}.png`) });
+    await context.close();
+    await browser.close();
+  });
 }

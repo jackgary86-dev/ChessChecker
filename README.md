@@ -1,12 +1,14 @@
 # ChessChecker
 
-Basic hot-seat Chess and Checkers, played by two people on one screen. No
-computer opponent, no network play. Each game is a separate static web app
-with plain ES modules — no build step, no dependencies, no web fonts, no
-CDNs (so it also works with no internet on the LAN).
+Basic hot-seat Chess and Checkers, played by two people on one screen, plus
+an autochess mode where the two games fight each other. No computer
+opponent, no network play. Each mode is a separate static web app with
+plain ES modules — no build step, no dependencies, no web fonts, no CDNs
+(so it also works with no internet on the LAN).
 
 - **Chess** — `chess/` — served on **port 3012**: `http://<IP of machine>:3012`
 - **Checkers** — `checkers/` — served on **port 3013**: `http://<IP of machine>:3013`
+- **Autochess** — `autochess/` — Chess vs Checkers, auto-battling; see below
 
 A menu page at the repo root (`index.html`) links to both, for local
 combined browsing; it isn't part of either per-port deployment.
@@ -45,6 +47,27 @@ coming back resumes the game in progress. "New game" resets the board (not
 the match history). Pieces are drawn as custom inline SVG icons, not font
 glyphs — no external images, fonts, or CDNs.
 
+**Autochess** — no input during the fight: Chess lines up in its classic
+opening rows (rook, knight, bishop, queen, king, bishop, knight, rook, then
+eight pawns — reskinned as Footsoldier/Lancer/Cleric/Bulwark/Warqueen/High
+King), Checkers lines up in its classic starting rows (reskinned as
+Draughtsman, with two pre-kinged Draughts Lords), and four random tiles in
+the middle rows are blocked each battle. Press **Fight!** to watch it
+resolve automatically, tick by tick (**Resolve instantly** skips straight
+to the result), or **New battle** for a fresh random layout.
+
+The two sides play differently on purpose: **Chess is offense** — higher
+attack and mobility, every unit just goes for the nearest enemy on its own.
+**Checkers is defense** — lower raw stats, but every living Checkers unit
+reduces incoming damage by 1 for each adjacent living Checkers ally, so
+they're toughest while clustered together (the "hive mind"). **Chess loses
+instantly if its High King falls**, even with other units still
+standing — Checkers loses only once every unit is down. A Footsoldier or
+Draughtsman that reaches the far row is promoted to a stronger Veteran.
+Across 500 simulated battles this comes out to roughly 42% Chess / 53%
+Checkers / 5% draw — close, with a mild Checkers edge; see `TICKETS.md` for
+balance-tuning as a likely next step.
+
 ## Run it locally
 
 Each game only needs a static file server pointed at its own folder:
@@ -55,6 +78,10 @@ python3 -m http.server 3012 --directory chess
 
 # Checkers on port 3013
 python3 -m http.server 3013 --directory checkers
+
+# Autochess has no assigned port yet — run it from the combined menu below,
+# or serve its folder directly:
+python3 -m http.server 3014 --directory autochess
 
 # Or, for the combined menu during development:
 python3 -m http.server 8000
@@ -89,6 +116,15 @@ checkers/
   checkers.js           UI wiring
   history.html/.js
   style.css
+autochess/
+  index.html
+  autochessRules.js       pure battle engine (no DOM) — starting formations,
+                           one simulation tick, full-battle runner, all
+                           deterministic for a given seed
+  chessPieceIcons.js, checkersPieceIcons.js  reused for unit art
+  autochess.js             UI: board/HP-bar rendering, Fight/Pause/Instant/
+                            New battle, battle log
+  style.css
 playerNames.js       pure name normalization (NAMES-02) + localStorage IO
 historyLogic.js      pure match-history logic (HISTORY-01): append/summarize/
                      recent-games/describe, unit tested
@@ -98,18 +134,20 @@ index.html           combined menu (dev convenience only)
 shared.css           source stylesheet the per-game style.css copies are based on
 TICKETS.md           the full ticket list (also filed as GitHub issues)
 test/
-  chessRules.test.js     node --test unit tests for the chess engine
-  checkersRules.test.js  node --test unit tests for the checkers engine
-  playerNames.test.js    node --test unit tests for name normalization
-  historyLogic.test.js   node --test unit tests for match-history logic
-  smoke.spec.js          Playwright: plays one move on each board at
-                          1280px and 390px wide
+  chessRules.test.js      node --test unit tests for the chess engine
+  checkersRules.test.js   node --test unit tests for the checkers engine
+  playerNames.test.js     node --test unit tests for name normalization
+  historyLogic.test.js    node --test unit tests for match-history logic
+  autochessRules.test.js  node --test unit tests for the autochess engine
+  smoke.spec.js           Playwright: exercises each page (a move on the
+                           chess/checkers boards, an instant autochess
+                           battle) at 1280px and 390px wide
 ```
 
 ## Testing
 
 ```bash
-npm test           # node --test: pure-logic unit tests (23 tests)
+npm test           # node --test: pure-logic unit tests (37 tests)
 npm run test:smoke # Playwright smoke test (needs `npm install` first)
 ```
 
@@ -125,5 +163,9 @@ checks the squares stay at least 40px even at a 390px-wide viewport.
 Standard rules for both games, hot-seat only, no computer opponent, no
 network multiplayer, no draw-by-repetition or 50-move rule. Editable player
 names, a persistent win/loss/draw history, and custom piece art (tickets
-#21-#25) are all in. `TICKETS.md` and the repo's GitHub issues track further
-work; new features and game modes build on top of this.
+#21-#25) are all in, plus the Autochess mode. Autochess v1 is deliberately
+simple: fixed classic starting formations (no drafting or placement phase),
+deterministic combat (no damage variance — only the obstacle layout is
+randomized), and a first-pass balance. `TICKETS.md` and the repo's GitHub
+issues track further work; new features and game modes build on top of
+this.

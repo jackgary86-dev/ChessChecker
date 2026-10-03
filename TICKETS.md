@@ -6,8 +6,9 @@ and `:3013`). This ticket list covers the *basic* build only; more features
 and game modes come later.
 
 All 20 tickets below (#1-#20 in the repo's GitHub issues) are done, shipped
-in commit `cf56219`. The **Next phase** section at the bottom (#21-#25)
-tracks what comes after the basic build.
+in commit `cf56219`. The **Next phase** section (#21-#25) and the
+**Autochess** section (#26-#30, plus #31-#34 backlog) track everything
+after the basic build.
 
 ## Chess
 1. **CHESS-01** — Board model: 8x8 state, standard starting position, FEN-free
@@ -85,3 +86,52 @@ Filed as GitHub issues #21-#25. All five are done.
     (`chessPieceIcons.js`, `checkersPieceIcons.js`) using only simple
     shapes (rects/polygons/circles), colored via CSS so White/Black and
     Red/Black stay theme-driven. No external assets, fonts, or CDNs.
+
+## Autochess
+
+A third mode: Chess vs Checkers, auto-battling. Filed as GitHub issues
+#26-#30. All five are done.
+
+26. **AUTOCHESS-01** — Pure battle engine (`autochessRules.js`, no DOM):
+    unit stat definitions, classic starting formations (Chess's real
+    back-row order, Checkers' real dark-square starting rows), and a
+    seeded, fully deterministic simulation — movement, targeting, attacks,
+    promotion, and win conditions.
+27. **AUTOCHESS-02** — Faction identities: **Chess is offense** (higher
+    attack/mobility, no team mechanic — each unit just goes for the
+    nearest enemy on its own) vs **Checkers is defense** (lower raw stats,
+    but a "hive mind" shield: 1 damage reduced per adjacent living
+    Checkers ally). Chess loses instantly if its High King falls, even
+    with other units alive; Checkers loses only when every unit is down —
+    asymmetric on purpose, echoing each game's own win condition.
+28. **AUTOCHESS-03** — Four random impassable tiles in the neutral middle
+    rows, reseeded on every new battle; movement avoids them (and they can
+    never overlap a unit's starting square, by construction).
+29. **AUTOCHESS-04** — Battle UI: board/HP-bar/Veteran-badge rendering
+    (reusing the existing chess/checkers piece-icon art, faction-tinted),
+    Fight!/Pause/Resolve-instantly/New-battle controls, a speed selector, a
+    battle log, and a winner banner. Linked from the root menu.
+30. **AUTOCHESS-05** — Tests: unit tests for the engine (determinism,
+    starting roster counts, obstacle placement, both win conditions, the
+    hive shield's exact damage reduction, the Draughts Lord's double hit,
+    promotion) and a Playwright smoke test that resolves a battle
+    instantly and checks the board at 1280px and 390px.
+
+### Autochess next phase (not built — backlog)
+
+Filed as GitHub issues #31-#34. Planning only.
+
+31. **AUTOCHESS-06** — Balance pass. Across 500 simulated battles the
+    current stats land around 42% Chess / 53% Checkers / 5% draw — close,
+    but Checkers has a real edge. Tune stats and/or the hive-shield
+    strength toward an even split, or make the matchup deliberately
+    asymmetric and say so.
+32. **AUTOCHESS-07** — A manual drafting/placement phase before the fight
+    (choosing or arranging units), instead of always using the fixed
+    classic starting formations.
+33. **AUTOCHESS-08** — Controlled randomness in combat (seeded, so still
+    reproducible/testable) so refighting the same starting layout doesn't
+    always produce the exact same result.
+34. **AUTOCHESS-09** — Record autochess results into the existing
+    win/loss/draw match-history system (currently only Chess and Checkers
+    write to it).

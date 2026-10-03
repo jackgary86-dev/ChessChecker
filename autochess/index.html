@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Autochess: Chess vs Checkers</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div class="app">
+  <h1>⚔ Chess vs Checkers</h1>
+  <p class="hint">Two armies in their classic starting ranks, one board, four random blocked
+    tiles. Chess fights as fierce individuals; Checkers fights as one defensive hive.
+    Press Fight and watch it resolve.</p>
+  <div class="topbar">
+    <button id="fightBtn" class="primary">Fight!</button>
+    <button id="instantBtn">Resolve instantly</button>
+    <button id="newBattleBtn">New battle</button>
+    <select id="speedSelect" aria-label="Battle speed">
+      <option value="900">Slow</option>
+      <option value="450" selected>Normal</option>
+      <option value="150">Fast</option>
+    </select>
+    <a href="../index.html"><button id="menu">Menu</button></a>
+  </div>
+  <div class="faction-counts">
+    <span id="chessCount" class="chess-label">Chess: 16</span>
+    <span id="checkersCount" class="checkers-label">Checkers: 12</span>
+  </div>
+  <div id="winnerBanner" class="winner-banner hidden"></div>
+  <div class="board-wrap"><div class="board" id="board"></div></div>
+  <div class="log-panel" id="logPanel"></div>
+  <footer class="hint">Chess loses instantly if its High King falls — Checkers loses when
+    every unit is down. A Footsoldier or Draughtsman reaching the far row is promoted to
+    Veteran. Every Checkers unit reduces incoming damage by 1 for each adjacent living
+    ally: the hive mind defends together.</footer>
+</div>
+<script type="module" src="./autochess.js"></script>
+</body>
+</html>

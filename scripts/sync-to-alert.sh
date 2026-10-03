@@ -24,7 +24,7 @@ if [ ! -f "$ALERT/portal-game.json" ]; then
   exit 1
 fi
 
-mkdir -p "$ALERT/public/chess" "$ALERT/public/checkers" "$ALERT/test"
+mkdir -p "$ALERT/public/chess" "$ALERT/public/checkers" "$ALERT/public/autochess" "$ALERT/test"
 
 cp "$HERE/index.html" "$HERE/shared.css" "$HERE/playerNames.js" "$HERE/historyLogic.js" \
    "$HERE/historyStore.js" "$HERE/history.html" "$HERE/history.js" \
@@ -38,10 +38,13 @@ cp "$HERE/checkers/index.html" "$HERE/checkers/checkers.js" "$HERE/checkers/chec
    "$HERE/checkers/historyLogic.js" "$HERE/checkers/historyStore.js" \
    "$HERE/checkers/history.html" "$HERE/checkers/history.js" \
    "$ALERT/public/checkers/"
+cp "$HERE/autochess/index.html" "$HERE/autochess/autochess.js" "$HERE/autochess/autochessRules.js" \
+   "$HERE/autochess/chessPieceIcons.js" "$HERE/autochess/checkersPieceIcons.js" "$HERE/autochess/style.css" \
+   "$ALERT/public/autochess/"
 
 # Test files import the pure modules by relative path, which differs one
 # level deeper here (test/ sits next to public/, not next to the repo root
-# or chess/checkers/ directly).
+# or chess/checkers/autochess directly).
 sed 's#\.\./chess/chessRules\.js#../public/chess/chessRules.js#' \
   "$HERE/test/chessRules.test.js" > "$ALERT/test/chessRules.test.js"
 sed 's#\.\./checkers/checkersRules\.js#../public/checkers/checkersRules.js#' \
@@ -50,6 +53,8 @@ sed 's#\.\./historyLogic\.js#../public/historyLogic.js#' \
   "$HERE/test/historyLogic.test.js" > "$ALERT/test/historyLogic.test.js"
 sed 's#\.\./playerNames\.js#../public/playerNames.js#' \
   "$HERE/test/playerNames.test.js" > "$ALERT/test/playerNames.test.js"
+sed 's#\.\./autochess/autochessRules\.js#../public/autochess/autochessRules.js#' \
+  "$HERE/test/autochessRules.test.js" > "$ALERT/test/autochessRules.test.js"
 
 echo "Synced $HERE -> $ALERT"
 echo "Next, in $ALERT:"
